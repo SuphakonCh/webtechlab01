@@ -1,0 +1,182 @@
+[
+  {
+    "id": 1,
+    "name": "Organic Grapes",
+    "category": "Fruits",
+    "image": "img/fruite-item-5.jpg",
+    "description": "Fresh and sweet organic grapes picked directly from our farm.",
+    "price": 4.99,
+    "unit": "kg"
+  },
+  {
+    "id": 2,
+    "name": "Fresh Oranges",
+    "category": "Fruits",
+    "image": "img/fruite-item-1.jpg",
+    "description": "Juicy and vitamin-rich oranges, perfect for a fresh morning juice.",
+    "price": 3.99,
+    "unit": "kg"
+  },
+  {
+    "id": 3,
+    "name": "Raspberries",
+    "category": "Fruits",
+    "image": "img/fruite-item-2.jpg",
+    "description": "Deliciously sweet and tart raspberries, great for snacks and desserts.",
+    "price": 6.99,
+    "unit": "kg"
+  },
+  {
+    "id": 4,
+    "name": "Apricots",
+    "category": "Fruits",
+    "image": "img/fruite-item-4.jpg",
+    "description": "Tender and flavorful apricots, full of natural sweetness.",
+    "price": 5.49,
+    "unit": "kg"
+  },
+  {
+    "id": 5,
+    "name": "Banana",
+    "category": "Fruits",
+    "image": "img/fruite-item-3.jpg",
+    "description": "High-energy organic bananas, packed with potassium and flavor.",
+    "price": 2.99,
+    "unit": "kg"
+  },
+  {
+    "id": 6,
+    "name": "Green Apple",
+    "category": "Fruits",
+    "image": "img/fruite-item-6.jpg",
+    "description": "Crisp and refreshing green apples, perfect for baking or snacking.",
+    "price": 4.49,
+    "unit": "kg"
+  },
+  {
+    "id": 7,
+    "name": "Parsley",
+    "category": "Vegetable",
+    "image": "img/vegetable-item-6.jpg",
+    "description": "Fresh organic parsley to add a burst of flavor to your dishes.",
+    "price": 1.99,
+    "unit": "bunch"
+  },
+  {
+    "id": 8,
+    "name": "Tomatoes",
+    "category": "Vegetable",
+    "image": "img/vegetable-item-1.jpg",
+    "description": "Ripe, red, and juicy tomatoes ideal for salads and sauces.",
+    "price": 3.49,
+    "unit": "kg"
+  },
+  {
+    "id": 9,
+    "name": "Bell Pepper",
+    "category": "Vegetable",
+    "image": "img/vegetable-item-4.jpg",
+    "description": "Crunchy and sweet bell peppers available in multiple vibrant colors.",
+    "price": 2.49,
+    "unit": "kg"
+  },
+  {
+    "id": 10,
+    "name": "Potatoes",
+    "category": "Vegetable",
+    "image": "img/vegetable-item-5.jpg",
+    "description": "Versatile organic potatoes, perfect for boiling, baking, or frying.",
+    "price": 1.49,
+    "unit": "kg"
+  },
+  {
+    "id": 11,
+    "name": "Organic Carrots",
+    "category": "Vegetable",
+    "image": "img/vegetable-item-6.jpg",
+    "description": "Crunchy, sweet organic carrots loaded with essential vitamins.",
+    "price": 2.29,
+    "unit": "kg"
+  },
+  {
+    "id": 12,
+    "name": "Broccoli",
+    "category": "Vegetable",
+    "image": "img/vegetable-item-3.png",
+    "description": "Fresh broccoli crowns, packed with nutrients and easy to cook.",
+    "price": 3.99,
+    "unit": "kg"
+  },
+  {
+    "id": 13,
+    "name": "Fresh Garlic",
+    "category": "Vegetable",
+    "image": "img/vegetable-item-1.jpg",
+    "description": "Aromatic fresh garlic to elevate the taste of any savory recipe.",
+    "price": 4.99,
+    "unit": "kg"
+  },
+  {
+    "id": 14,
+    "name": "Red Onion",
+    "category": "Vegetable",
+    "image": "img/vegetable-item-5.jpg",
+    "description": "Crisp red onions, great for salads, sandwiches, and cooking.",
+    "price": 1.89,
+    "unit": "kg"
+  },
+  {
+    "id": 15,
+    "name": "Strawberries",
+    "category": "Fruits",
+    "image": "img/fruite-item-2.jpg",
+    "description": "Sweet, vibrant red strawberries perfect for fresh eating or desserts.",
+    "price": 7.99,
+    "unit": "kg"
+  },
+  {
+    "id": 16,
+    "name": "Whole Wheat Bread",
+    "category": "Bread",
+    "image": "img/bread-item-1.jpg",
+    "description": "Freshly baked whole wheat bread, rich in fiber and wholesome goodness.",
+    "price": 3.99,
+    "unit": "loaf"
+  },
+  {
+    "id": 17,
+    "name": "French Baguette",
+    "category": "Bread",
+    "image": "img/bread-item-2.jpg",
+    "description": "Classic French baguette with a crispy crust and soft interior.",
+    "price": 2.99,
+    "unit": "loaf"
+  },
+  {
+    "id": 18,
+    "name": "Fresh Beef Steak",
+    "category": "Meat",
+    "image": "img/meat-item-1.jpg",
+    "description": "Premium quality, tender beef steak sourced from local farms.",
+    "price": 14.99,
+    "unit": "kg"
+  },
+  {
+    "id": 19,
+    "name": "Organic Chicken Breast",
+    "category": "Meat",
+    "image": "img/meat-item-2.jpg",
+    "description": "Lean and healthy organic chicken breasts, perfect for grilling or roasting.",
+    "price": 9.99,
+    "unit": "kg"
+  },
+  {
+    "id": 20,
+    "name": "Fresh Salmon",
+    "category": "Meat",
+    "image": "img/meat-item-3.jpg",
+    "description": "Rich and flavorful fresh salmon fillets, packed with Omega-3.",
+    "price": 18.99,
+    "unit": "kg"
+  }
+]
