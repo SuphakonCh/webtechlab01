@@ -1,11 +1,15 @@
+// ========================================
+// RENDER UI — generates product cards from data
+// ========================================
+
 // Function to handle the rendering of the user interface
 // It takes the 'products' array as an input and generates HTML for each product
 function renderUI(products) {
-    const container = document.getElementById('product-container');
+    const container = document.getElementById('catalog');
     
     // Check if the target container exists in the DOM
     if (!container) {
-        console.error('Error: #product-container not found in the DOM.');
+        console.error('Error: #catalog not found in the DOM.');
         return;
     }
 
@@ -14,7 +18,10 @@ function renderUI(products) {
     
     // Loop through each product object in the data array
     products.forEach(product => {
-        // Create the HTML structure for a single product card
+        // Create the HTML structure for a single product card.
+        // NOTE: The button now has:
+        //   - class "add-to-cart" → so our Event Delegation can identify it
+        //   - data-id="${product.id}" → so we can grab the product ID on click
         const productHTML = `
             <div class="col-md-6 col-lg-4 col-xl-3">
                 <div class="rounded position-relative fruite-item d-flex flex-column">
@@ -27,7 +34,7 @@ function renderUI(products) {
                         <p>${product.description}</p>
                         <div class="d-flex justify-content-between flex-lg-wrap mt-auto">
                             <p class="text-dark fs-5 fw-bold mb-0">$${product.price} / ${product.unit}</p>
-                            <a href="#" class="btn border border-secondary rounded-pill px-3 text-primary"><i class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart</a>
+                            <button class="btn border border-secondary rounded-pill px-3 text-primary add-to-cart" data-id="${product.id}"><i class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart</button>
                         </div>
                     </div>
                 </div>
@@ -98,7 +105,7 @@ async function requestProducts() {
     } catch (error) {
         // Error handling if fetch fails (e.g., file not found, network error)
         console.error('Failed to load products:', error);
-        const container = document.getElementById('product-container');
+        const container = document.getElementById('catalog');
         if (container) {
             container.innerHTML = `
                 <div class="col-12 text-center py-5">
@@ -131,7 +138,7 @@ function applyFilters() {
 
     // If no products matched, show a friendly "not found" message
     if (results.length === 0) {
-        const container = document.getElementById('product-container');
+        const container = document.getElementById('catalog');
         if (container) {
             container.innerHTML = `
                 <div class="col-12 text-center py-5">
@@ -143,6 +150,61 @@ function applyFilters() {
     }
 }
 
+/**
+ * handleAddToCart — Handler function for the "Add to Cart" action.
+ *
+ * This function is called whenever a user clicks an ".add-to-cart" button.
+ * It receives the clicked button element, extracts the product ID from its
+ * data-id attribute, looks up the product in the allProducts array,
+ * and calls addToCart() from cart.js to persist the data in localStorage.
+ *
+ * @param {HTMLElement} button - The .add-to-cart button that was clicked.
+ */
+function handleAddToCart(button) {
+    // Step 1: Read the "data-id" attribute from the clicked button.
+    //         This gives us the unique product ID (as a string).
+    const productId = button.getAttribute('data-id');
+
+    // Step 2: Find the matching product in the allProducts array.
+    //         We compare as strings to avoid type-mismatch issues.
+    const product = allProducts.find(function (p) {
+        return String(p.id) === String(productId);
+    });
+
+    // Step 3: Guard clause — if the product wasn't found, stop here.
+    if (!product) {
+        console.warn('Product with ID ' + productId + ' not found.');
+        return;
+    }
+
+    // Step 4: Use the addToCart() function from cart.js
+    //         This saves the product to localStorage and updates the badge.
+    addToCart(product);
+
+    // Step 5: Show a brief visual feedback to the user
+    showAddedFeedback(button);
+}
+
+/**
+ * showAddedFeedback — Shows a quick "Added!" animation on the button.
+ *
+ * @param {HTMLElement} button - The button to animate.
+ */
+function showAddedFeedback(button) {
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="fa fa-check me-2"></i> Added!';
+    button.classList.add('btn-primary');
+    button.classList.remove('text-primary');
+    button.style.color = '#fff';
+
+    setTimeout(function () {
+        button.innerHTML = originalHTML;
+        button.classList.remove('btn-primary');
+        button.classList.add('text-primary');
+        button.style.color = '';
+    }, 1000);
+}
+
 // ========================================
 // INITIALIZATION — runs when the page finishes loading
 // ========================================
@@ -150,6 +212,53 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Step 1: Fetch all products from JSON, then set up the UI
     requestProducts().then(function () {
+
+        // ========================================
+        // EVENT DELEGATION — Add to Cart
+        // ========================================
+        // Instead of attaching a click listener to EVERY .add-to-cart button,
+        // we attach ONE listener to the parent container (#catalog).
+        //
+        // WHY? Because the product cards are generated dynamically
+        // (they don't exist when the page first loads). If we tried to
+        // attach listeners directly to .add-to-cart buttons, they would
+        // only work for buttons that exist RIGHT NOW — any buttons
+        // created later (e.g. after filtering) would be missed.
+        //
+        // HOW IT WORKS (Event Bubbling):
+        // When a user clicks a button inside #catalog, the click event
+        // "bubbles up" from the button → through its parent elements →
+        // all the way up to #catalog. Our listener on #catalog catches
+        // the event, then checks if the original click target was an
+        // .add-to-cart button. If yes, we handle it; if no, we ignore it.
+        // ========================================
+
+        const catalog = document.getElementById('catalog');
+
+        if (catalog) {
+            catalog.addEventListener('click', function (event) {
+                // event.target is the exact element that was clicked.
+                // However, the user might click the <i> icon INSIDE the button,
+                // so event.target could be the icon, not the button itself.
+                //
+                // .closest('.add-to-cart') walks UP the DOM tree from the
+                // clicked element until it finds an ancestor (or itself)
+                // that matches the '.add-to-cart' selector.
+                // If none is found, it returns null.
+                const addToCartButton = event.target.closest('.add-to-cart');
+
+                // If the click was NOT on an .add-to-cart button (or its child),
+                // addToCartButton will be null — we simply do nothing.
+                if (!addToCartButton) return;
+
+                // Extra safety: make sure this button is actually inside #catalog
+                // (not some other .add-to-cart button elsewhere on the page).
+                if (!catalog.contains(addToCartButton)) return;
+
+                // Call our handler function, passing the button element
+                handleAddToCart(addToCartButton);
+            });
+        }
 
         // --- CATEGORY TAB CLICK HANDLERS ---
         // Select all tab links that have the 'category-tab' class
