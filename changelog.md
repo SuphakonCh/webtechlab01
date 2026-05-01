@@ -144,3 +144,37 @@
 | ค้นหา "Banana" | ✅ แสดงเฉพาะ Banana |
 | ค้นหาคำที่ไม่มี | ✅ แสดง "No products found" |
 | ค้นหา + กรอง Category พร้อมกัน | ✅ ทำงานร่วมกันได้ |
+
+---
+
+## [2026-05-01] Dynamic Shopping Cart & Backend Restructuring
+
+### 1. ระบบตะกร้าสินค้าแบบ Dynamic (Cart Module)
+- **แยก `cart.js`**: สร้าง module กลางสำหรับจัดการตะกร้าสินค้า
+- **localStorage Persistence**: เปลี่ยนจากการเก็บข้อมูลใน Memory เป็น localStorage ทำให้ผู้ใช้ไม่เสียข้อมูลเมื่อเปลี่ยนหน้าจาก Shop ไปยัง Cart
+- **Event Delegation**: ใช้ Delegation ในการจับ Event การเพิ่มสินค้า (`.add-to-cart`) ในหน้า `index.html` และ Event การจัดการตะกร้า (`.cart-plus`, `.cart-minus`, `.cart-remove`) ในหน้า `cart.html`
+- **Dynamic Rendering**: 
+  - ลบ Mock Data ใน `cart.html` ทิ้ง
+  - นำข้อมูลจาก localStorage มาสร้างแถว (row) สินค้าอัตโนมัติ
+  - เพิ่มข้อความ "Your cart is empty" หากไม่มีสินค้า
+  - คำนวณ Subtotal และ Total อัตโนมัติทุกครั้งที่มีการเปลี่ยนจำนวนสินค้า
+- **UI Feedback**: เพิ่ม Animation บนปุ่ม Add to Cart ให้เปลี่ยนเป็นคำว่า "✓ Added!" ชั่วคราวเมื่อกด
+
+### 2. ติดตั้ง Backend ด้วย Node.js & Express
+- **เริ่มต้นโปรเจกต์**: `npm init -y` และติดตั้ง `express`
+- **Controller-Route-Service Pattern**: จัดการโครงสร้างโค้ดฝั่ง Backend ให้ได้มาตรฐานและดูแลรักษาง่าย
+  - **Route (`routes/products.js`)**: รับผิดชอบกำหนดเส้นทาง (Endpoints)
+  - **Controller (`controllers/productController.js`)**: เป็นตัวกลางรับ HTTP Request ส่งให้ Service ประมวลผล และตอบกลับเป็น JSON พร้อม Status Code
+  - **Service (`services/productService.js`)**: จัดการ Business Logic และ Data Access (อ่านไฟล์ `products.json`)
+- **API Endpoints**:
+  - `GET /api/products` — คืนค่าสินค้าทั้งหมด
+  - `GET /api/products/:id` — คืนค่าสินค้า 1 รายการตาม ID (คืน 404 หากไม่พบ)
+
+### 3. ปรับโครงสร้างโฟลเดอร์ (Project Restructuring)
+- **ทำความสะอาด**: ลบไฟล์ที่ไม่ได้ใช้งานของ Template ต้นฉบับ (`Fruitables.jpg`, `READ-ME.txt`, `LICENSE.txt`)
+- **แยก Frontend / Backend**:
+  - สร้างโฟลเดอร์ `frontend/` และย้ายไฟล์ HTML, CSS, JS, Images ทั้งหมดเข้าไป
+  - สร้างโฟลเดอร์ `backend/` และย้าย API, `server.js`, `products.json`, `node_modules`, และไฟล์ config ต่างๆ เข้าไป
+- **อัปเดตการทำงาน**:
+  - แก้ไข `backend/server.js` ให้ Serve Static Files ชี้ไปยัง `../frontend`
+  - อัปเดต `frontend/js/fetchProducts.js` จากเดิมที่อ่าน `products.json` ในโฟลเดอร์เดียวกัน ให้ไปยิง API ขอข้อมูลจาก `fetch('/api/products')` ผ่าน Backend แทน

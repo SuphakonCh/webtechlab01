@@ -84,8 +84,8 @@ function filterProducts(searchTerm, category) {
 // Function to request products data from the JSON file
 async function requestProducts() {
     try {
-        // Data Flow Step 1: Request data from the local JSON file using the fetch() API
-        const response = await fetch('products.json');
+        // Data Flow Step 1: Request data from our Express Backend API
+        const response = await fetch('/api/products');
         
         // Data Flow Step 2: Check if the response is successful (e.g., HTTP status 200 OK)
         if (!response.ok) {
