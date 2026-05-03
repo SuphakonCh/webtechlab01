@@ -64,4 +64,3 @@ app.listen(port, () => {
     console.log(`  GET /api/products/:id   → Single product`);
     console.log(`===================================`);
 });
-    

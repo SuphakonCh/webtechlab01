@@ -20,17 +20,34 @@ const productService = require('../services/productService');
 /**
  * getAll — Controller for GET /api/products
  *
- * Retrieves all products from the service and sends them as JSON.
+ * Retrieves all products from the service. If a 'category' query parameter
+ * is provided (e.g., ?category=Fruits), it filters the products.
  *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
 function getAll(req, res) {
     try {
-        // Ask the service layer for all products
-        const products = productService.getAllProducts();
+        // 1. Extract the query parameter from the request URL
+        const category = req.query.category;
 
-        // Send the products array as a JSON response with status 200 (OK)
+        // 2. Ask the service layer for the products, passing the category (if any)
+        const products = productService.getAllProducts(category);
+
+        // 3. GATEKEEPER LOGIC (Validation)
+        // If the client requested a specific category but the service returned an empty array,
+        // it means no products were found for that category (or the category doesn't exist).
+        // 
+        // APPROACH 1 (Strict Validation): Return a 404 error if you strictly only want valid categories.
+        // if (category && products.length === 0) {
+        //     return res.status(404).json({ error: 'Category not found' });
+        // }
+        //
+        // APPROACH 2 (Graceful Handling - Recommended): Return a 200 OK with the empty array [].
+        // This is standard for REST APIs when a filter just doesn't match any results.
+        // We will use Approach 2 here.
+
+        // Send the products array (or empty array) as a JSON response with status 200 (OK)
         res.status(200).json(products);
     } catch (error) {
         // If something goes wrong (e.g., file not found), return a 500 error

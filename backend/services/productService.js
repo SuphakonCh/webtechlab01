@@ -16,19 +16,25 @@ const DATA_PATH = path.join(__dirname, '..', 'products.json');
 
 /**
  * getAllProducts — Reads the products.json file and returns all products.
+ * If a category is provided, it filters the products by that category.
  *
- * This function uses fs.readFileSync to read the file from disk,
- * then JSON.parse() to convert the raw text into a JavaScript array.
- *
+ * @param {string} [category] - Optional category to filter by (e.g., 'Fruits').
  * @returns {Array} An array of product objects.
  * @throws {Error} If the file cannot be read or parsed.
  */
-function getAllProducts() {
+function getAllProducts(category) {
     // Read the file from disk (synchronous for simplicity)
     const rawData = fs.readFileSync(DATA_PATH, 'utf-8');
 
     // Parse the JSON string into a JavaScript array of objects
-    const products = JSON.parse(rawData);
+    let products = JSON.parse(rawData);
+
+    // If a category was provided in the request, filter the array
+    if (category) {
+        // We use toLowerCase() to make the search case-insensitive
+        const lowerCaseCategory = category.toLowerCase();
+        products = products.filter(p => p.category && p.category.toLowerCase() === lowerCaseCategory);
+    }
 
     return products;
 }

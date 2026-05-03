@@ -24,7 +24,8 @@ const productController = require('../controllers/productController');
 // the router calls productController.getAll to handle it.
 //
 // Example: http://localhost:3000/api/products
-// Response: JSON array of all products from products.json
+// Example (with filter): http://localhost:3000/api/products?category=Fruits
+// Response: JSON array of all products (or filtered products) from products.json
 // -------------------------------------------------------
 router.get('/', productController.getAll);
 
