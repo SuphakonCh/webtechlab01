@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "username": "alice.johnson@fruitables.com",
+    "password": "$2b$10$4wIjs2N78rPJNPPETjnDJOrBt.YOzEHd7aR1rW93jPcwW1zCMML5m",
+    "firstName": "Alice",
+    "registeredAt": "2025-11-03T08:24:10Z"
+  },
+  {
+    "id": 2,
+    "username": "bob.smith@fruitables.com",
+    "password": "$2b$10$xQ0qVg8.E1o28HVOA8Dt..2RUA1jNw8WNzMFo4zarTHAKsVFiqjg2",
+    "firstName": "Bob",
+    "registeredAt": "2025-11-15T13:45:33Z"
+  },
+  {
+    "id": 3,
+    "username": "carol.white@fruitables.com",
+    "password": "$2b$10$.ZatKsx2cwNOX9nKDiM0gOYg1Xb9bxT0FlRVJBpoJKhhNwjALHAn2",
+    "firstName": "Carol",
+    "registeredAt": "2025-12-01T09:10:05Z"
+  },
+  {
+    "id": 4,
+    "username": "david.lee@fruitables.com",
+    "password": "$2b$10$QODyjEZ/Eu1PjpWUFgfKZ.o7wGRPHJgS/juZW8uT2wz7sDew/9SJ.",
+    "firstName": "David",
+    "registeredAt": "2025-12-14T16:30:55Z"
+  },
+  {
+    "id": 5,
+    "username": "emma.davis@fruitables.com",
+    "password": "$2b$10$ZvrI.GZEAxvHiCF340cMj.BXX1Oc59HqXBKmmI7v3gYf/5fvTVO.C",
+    "firstName": "Emma",
+    "registeredAt": "2026-01-07T11:02:44Z"
+  },
+  {
+    "id": 6,
+    "username": "frank.miller@fruitables.com",
+    "password": "$2b$10$Ff3CL1uTPrtYjqHXpzdyH.MQMzrZJiLExA0N5Qb15mYN94dMdGYdW",
+    "firstName": "Frank",
+    "registeredAt": "2026-01-20T07:58:19Z"
+  },
+  {
+    "id": 7,
+    "username": "grace.wilson@fruitables.com",
+    "password": "$2b$10$NiEamvqtO8nGpqrpDWDY3ucYpwtdTfE3roqS7fQaUtv5MFGPEudjO",
+    "firstName": "Grace",
+    "registeredAt": "2026-02-03T14:25:00Z"
+  },
+  {
+    "id": 8,
+    "username": "henry.moore@fruitables.com",
+    "password": "$2b$10$MiIpHPFAae.gdoYIvvRG2ecz6v3PCJIbPE1ATITUR17HEVA3nFi9q",
+    "firstName": "Henry",
+    "registeredAt": "2026-02-18T10:40:12Z"
+  },
+  {
+    "id": 9,
+    "username": "iris.taylor@fruitables.com",
+    "password": "$2b$10$e2eN.HyRDqfOCZgRfeSTCePP4Xj6Ca2oW5Wnh7bZKk3hwqtLpV9i.",
+    "firstName": "Iris",
+    "registeredAt": "2026-03-05T17:15:38Z"
+  },
+  {
+    "id": 10,
+    "username": "james.anderson@fruitables.com",
+    "password": "$2b$10$3AtC44zLkYp7546iWgjfu.0N4.4IduqM7TdiQ7M8yR4wbqdZDEBci",
+    "firstName": "James",
+    "registeredAt": "2026-03-22T08:55:27Z"
+  }
+]

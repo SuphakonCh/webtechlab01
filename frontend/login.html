@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign In — Fruitables</title>
+    <meta name="description" content="Sign in to your Fruitables account to shop fresh fruits and vegetables." />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        /* =============================================
+           DESIGN TOKENS & RESET
+        ============================================= */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --color-bg:          #0d1117;
+            --color-surface:     #161b22;
+            --color-border:      rgba(255,255,255,0.08);
+            --color-text:        #e6edf3;
+            --color-muted:       #7d8590;
+            --color-primary:     #81c784;
+            --color-primary-dk:  #4caf50;
+            --color-accent:      #a5d6a7;
+            --color-error:       #f87171;
+            --color-error-bg:    rgba(248,113,113,0.10);
+            --color-success-bg:  rgba(129,199,132,0.12);
+            --radius-lg:         16px;
+            --radius-md:         10px;
+            --radius-sm:         6px;
+            --transition:        0.25s ease;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            background-image:
+                radial-gradient(ellipse 80% 60% at 20% 10%,  rgba(76,175,80,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 90%, rgba(129,199,132,0.08) 0%, transparent 60%);
+        }
+
+        /* =============================================
+           CARD
+        ============================================= */
+        .card {
+            width: 100%;
+            max-width: 420px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 40px 36px;
+            box-shadow:
+                0 0 0 1px rgba(129,199,132,0.04),
+                0 20px 60px rgba(0,0,0,0.5);
+            animation: slideUp 0.45s cubic-bezier(0.22,1,0.36,1);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Logo / Brand */
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--color-primary-dk), var(--color-accent));
+            border-radius: var(--radius-sm);
+            display: grid;
+            place-items: center;
+            font-size: 20px;
+        }
+
+        .brand-name {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            color: var(--color-text);
+        }
+
+        /* Heading */
+        h1 {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            color: var(--color-muted);
+            font-size: 14px;
+            margin-bottom: 28px;
+        }
+
+        /* =============================================
+           FORM
+        ============================================= */
+        .field {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-muted);
+            margin-bottom: 7px;
+            letter-spacing: 0.3px;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            color: var(--color-text);
+            font-family: 'Outfit', sans-serif;
+            font-size: 15px;
+            outline: none;
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(129,199,132,0.15);
+        }
+
+        input::placeholder { color: var(--color-muted); }
+
+        /* Submit Button */
+        #btn-login {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, var(--color-primary-dk), var(--color-accent));
+            border: none;
+            border-radius: var(--radius-md);
+            color: #0d1117;
+            font-family: 'Outfit', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: opacity var(--transition), transform var(--transition), box-shadow var(--transition);
+            box-shadow: 0 4px 20px rgba(76,175,80,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        #btn-login:hover:not(:disabled) {
+            opacity: 0.88;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 28px rgba(76,175,80,0.45);
+        }
+
+        #btn-login:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        #btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 17px; height: 17px;
+            border: 2px solid rgba(13,17,23,0.3);
+            border-top-color: #0d1117;
+            border-radius: 50%;
+            animation: spin 0.65s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* =============================================
+           ALERT BANNERS
+        ============================================= */
+        .alert {
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 16px;
+            display: none;
+            align-items: flex-start;
+            gap: 9px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .alert-error {
+            background: var(--color-error-bg);
+            border: 1px solid rgba(248,113,113,0.25);
+            color: var(--color-error);
+        }
+
+        .alert-success {
+            background: var(--color-success-bg);
+            border: 1px solid rgba(129,199,132,0.25);
+            color: var(--color-primary);
+        }
+
+        .alert.visible { display: flex; }
+
+
+    </style>
+</head>
+<body>
+
+<main class="card" role="main">
+
+    <!-- Brand -->
+    <div class="brand">
+        <div class="brand-icon" aria-hidden="true">🌿</div>
+        <span class="brand-name">Fruitables</span>
+    </div>
+
+    <!-- Heading -->
+    <h1>Welcome back</h1>
+    <p class="subtitle">Sign in to your account to continue shopping.</p>
+
+    <!-- Login Form -->
+    <form id="login-form" novalidate>
+
+        <div class="field">
+            <label for="input-email">Email address</label>
+            <input
+                id="input-email"
+                type="email"
+                placeholder="you@fruitables.com"
+                autocomplete="email"
+                required
+            />
+        </div>
+
+        <div class="field">
+            <label for="input-password">Password</label>
+            <input
+                id="input-password"
+                type="password"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+                required
+            />
+        </div>
+
+        <button id="btn-login" type="submit">
+            <div class="spinner" id="spinner" aria-hidden="true"></div>
+            <span id="btn-text">Sign In</span>
+        </button>
+
+    </form>
+
+    <!-- Error Alert -->
+    <div id="alert-error" class="alert alert-error" role="alert" aria-live="polite">
+        <span>⚠</span>
+        <span id="error-message">Invalid email or password.</span>
+    </div>
+
+    <!-- Success Alert -->
+    <div id="alert-success" class="alert alert-success" role="status" aria-live="polite">
+        <span>✔</span>
+        <span id="success-message">Login successful! Token saved.</span>
+    </div>
+
+
+
+</main>
+
+<script>
+    // =============================================
+    // LOGIN FLOW — login.html
+    // =============================================
+    // 1. Intercept the form submit event
+    // 2. Send POST /api/auth/login with credentials
+    // 3. On 200: save the JWT to localStorage, show success, redirect home
+    // 4. On 401/400/500: show an error message
+    // =============================================
+
+    const API_URL       = 'http://localhost:3000/api/auth/login';
+    const STORAGE_KEY   = 'fruitables_token';
+
+    // DOM references
+    const form          = document.getElementById('login-form');
+    const emailInput    = document.getElementById('input-email');
+    const passwordInput = document.getElementById('input-password');
+    const btnLogin      = document.getElementById('btn-login');
+    const btnText       = document.getElementById('btn-text');
+    const spinner       = document.getElementById('spinner');
+    const alertError    = document.getElementById('alert-error');
+    const errorMessage  = document.getElementById('error-message');
+    const alertSuccess  = document.getElementById('alert-success');
+    const successMsg    = document.getElementById('success-message');
+
+    // -------------------------------------------------------
+    // Helpers: show/hide UI states
+    // -------------------------------------------------------
+    function setLoading(loading) {
+        btnLogin.disabled      = loading;
+        spinner.style.display  = loading ? 'block' : 'none';
+        btnText.textContent    = loading ? 'Signing in…' : 'Sign In';
+    }
+
+    function showError(message) {
+        alertError.classList.add('visible');
+        alertSuccess.classList.remove('visible');
+        errorMessage.textContent = message;
+    }
+
+    function showSuccess(firstName) {
+        alertSuccess.classList.add('visible');
+        alertError.classList.remove('visible');
+        successMsg.textContent = `Welcome back, ${firstName}! Redirecting…`;
+    }
+
+    function clearAlerts() {
+        alertError.classList.remove('visible');
+        alertSuccess.classList.remove('visible');
+    }
+
+    // -------------------------------------------------------
+    // Main submit handler
+    // -------------------------------------------------------
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault(); // Stop default browser form submission
+        clearAlerts();
+
+        const email    = emailInput.value.trim();
+        const password = passwordInput.value;
+
+        // Client-side validation (the server validates too, but we fail fast here)
+        if (!email || !password) {
+            showError('Please fill in both email and password fields.');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            // -------------------------------------------------------
+            // Send POST request to /api/auth/login
+            // -------------------------------------------------------
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // -------------------------------------------------------
+                // SUCCESS: Save JWT to localStorage then redirect home
+                // -------------------------------------------------------
+                localStorage.setItem(STORAGE_KEY, data.token);
+
+                showSuccess(data.user.firstName);
+
+                // Redirect to the home page after a short delay (1.2s)
+                // so the user can briefly see the success message.
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1200);
+            } else {
+                // -------------------------------------------------------
+                // SERVER-SIDE ERROR: 400, 401, 500 etc.
+                // -------------------------------------------------------
+                showError(data.message || 'Authentication failed. Please try again.');
+            }
+
+        } catch (networkError) {
+            // Fetch throws a TypeError if the server is unreachable
+            showError('Cannot connect to the server. Make sure the backend is running on port 3000.');
+            console.error('Network error:', networkError);
+        } finally {
+            setLoading(false);
+        }
+    });
+</script>
+
+</body>
+</html>

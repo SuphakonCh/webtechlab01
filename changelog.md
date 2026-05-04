@@ -178,3 +178,35 @@
 - **อัปเดตการทำงาน**:
   - แก้ไข `backend/server.js` ให้ Serve Static Files ชี้ไปยัง `../frontend`
   - อัปเดต `frontend/js/fetchProducts.js` จากเดิมที่อ่าน `products.json` ในโฟลเดอร์เดียวกัน ให้ไปยิง API ขอข้อมูลจาก `fetch('/api/products')` ผ่าน Backend แทน
+
+---
+
+## [2026-05-04] สร้างระบบ Login (Authentication & JWT)
+
+### 1. ติดตั้ง Packages เพิ่มเติม (Backend)
+- `bcrypt`: สำหรับแฮช (Hash) และตรวจสอบรหัสผ่านอย่างปลอดภัย
+- `jsonwebtoken`: สำหรับสร้าง JWT (Token) เพื่อใช้ยืนยันตัวตนหลังล็อกอินสำเร็จ
+
+### 2. สร้างไฟล์และโครงสร้าง API ใหม่ (Backend)
+- **`backend/routes/auth.js`**: สร้าง Router รองรับ HTTP POST ที่ `/api/auth/login`
+- **`backend/controllers/authController.js`**: 
+  - ตรวจสอบข้อมูลเบื้องต้น (Gatekeeper)
+  - นำข้อมูลไปตรวจสอบกับ Service
+  - สร้างและส่งคืน **JWT** (JSON Web Token) กลับไปยังผู้ใช้เมื่อล็อกอินสำเร็จ
+- **`backend/services/authService.js`**:
+  - `findUserByEmail(email)`: ค้นหาผู้ใช้จากไฟล์ JSON
+  - `verifyPassword(plaintext, hashed)`: เปรียบเทียบรหัสผ่านที่ส่งมากับ Hash ในฐานข้อมูลด้วย `bcrypt`
+
+### 3. ปรับปรุงไฟล์เดิมเพื่อรองรับระบบ Login
+- **`backend/server.js`**:
+  - เพิ่ม `app.use('/api/auth', require('./routes/auth'))`
+  - เพิ่มเส้นทาง `POST /api/auth/login` ลงใน Console log เริ่มต้น
+- **`backend/users.json`**:
+  - เปลี่ยนแปลงรหัสผ่านของทั้ง 10 ผู้ใช้จาก `MD5` ให้เป็น **`bcrypt hash`** เพื่อความปลอดภัยระดับมาตรฐาน
+
+### 4. สร้างหน้าเว็บ Login (Frontend)
+- **`frontend/login.html`**:
+  - หน้าฟอร์มแบบ Dark Theme ที่ดูทันสมัย
+  - ใช้ `fetch` ยิง Request POST ไปยัง API
+  - จัดเก็บ Token ลงใน **`localStorage`** อัตโนมัติ หากล็อกอินสำเร็จ
+  - แสดง Alert แจ้งเตือนข้อผิดพลาด หากข้อมูลไม่ถูกต้องหรืออีเมลไม่มีในระบบ (โดยใช้ข้อความผิดพลาดเดียวกันคือ `Invalid email or password.` เพื่อป้องกัน User Enumeration Attack)

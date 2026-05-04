@@ -38,6 +38,7 @@ app.use(express.json());
 
 // Serve static files (HTML, CSS, JS, images) from the frontend folder
 // This allows the frontend (index.html, etc.) to be accessed at http://localhost:3000/
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 // -------------------------------------------------------
 // ROUTES
@@ -46,9 +47,16 @@ app.use(express.json());
 // Import the products route module
 const productsRoute = require('./routes/products');
 
+// Import the auth route module
+const authRoute = require('./routes/auth');
+
 // Mount the products route at the /api/products path
 // Any request to /api/products/* will be handled by the products router
 app.use('/api/products', productsRoute);
+
+// Mount the auth route at the /api/auth path
+// POST /api/auth/login handles user login and JWT issuance
+app.use('/api/auth', authRoute);
 
 // -------------------------------------------------------
 // START SERVER
@@ -60,7 +68,8 @@ app.listen(port, () => {
     console.log(`  Running at: http://localhost:${port}`);
     console.log(`===================================`);
     console.log(`  API Endpoints:`);
-    console.log(`  GET /api/products      → All products`);
-    console.log(`  GET /api/products/:id   → Single product`);
+    console.log(`  GET  /api/products       → All products`);
+    console.log(`  GET  /api/products/:id   → Single product`);
+    console.log(`  POST /api/auth/login     → Authenticate user + get JWT`);
     console.log(`===================================`);
 });
