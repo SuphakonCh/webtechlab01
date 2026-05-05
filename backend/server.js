@@ -78,6 +78,7 @@ app.listen(port, () => {
     console.log(`  GET  /api/products       → All products`);
     console.log(`  GET  /api/products/:id   → Single product`);
     console.log(`  POST /api/auth/login     → Authenticate user + get JWT`);
+    console.log(`  POST /api/auth/register  → Register new user`);
     console.log(`  POST /api/checkout       → Validate and save checkout`);
     console.log(`===================================`);
 });

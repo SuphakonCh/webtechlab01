@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sign In — Fruitables</title>
-    <meta name="description" content="Sign in to your Fruitables account to shop fresh fruits and vegetables." />
+    <title>Register — Fruitables</title>
+    <meta name="description" content="Create a Fruitables account to start shopping." />
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <style>
         /* =============================================
@@ -48,7 +48,7 @@
         ============================================= */
         .card {
             width: 100%;
-            max-width: 420px;
+            max-width: 460px;
             background: var(--color-surface);
             border: 1px solid var(--color-border);
             border-radius: var(--radius-lg);
@@ -64,7 +64,7 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* Logo / Brand */
+        /* Brand */
         .brand {
             display: flex;
             align-items: center;
@@ -100,7 +100,7 @@
         .subtitle {
             color: var(--color-muted);
             font-size: 14px;
-            margin-bottom: 28px;
+            margin-bottom: 22px;
         }
 
         /* =============================================
@@ -119,6 +119,7 @@
             letter-spacing: 0.3px;
         }
 
+        input[type="text"],
         input[type="email"],
         input[type="password"] {
             width: 100%;
@@ -133,16 +134,21 @@
             transition: border-color var(--transition), box-shadow var(--transition);
         }
 
-        input[type="email"]:focus,
-        input[type="password"]:focus {
+        input:focus {
             border-color: var(--color-primary);
             box-shadow: 0 0 0 3px rgba(129,199,132,0.15);
         }
 
         input::placeholder { color: var(--color-muted); }
 
+        .hint {
+            font-size: 12px;
+            color: var(--color-muted);
+            margin-top: 6px;
+        }
+
         /* Submit Button */
-        #btn-login {
+        #btn-register {
             width: 100%;
             padding: 13px;
             background: linear-gradient(135deg, var(--color-primary-dk), var(--color-accent));
@@ -162,17 +168,17 @@
             gap: 8px;
         }
 
-        #btn-login:hover:not(:disabled) {
+        #btn-register:hover:not(:disabled) {
             opacity: 0.88;
             transform: translateY(-1px);
             box-shadow: 0 6px 28px rgba(76,175,80,0.45);
         }
 
-        #btn-login:active:not(:disabled) {
+        #btn-register:active:not(:disabled) {
             transform: translateY(0);
         }
 
-        #btn-login:disabled {
+        #btn-register:disabled {
             opacity: 0.6;
             cursor: not-allowed;
         }
@@ -189,9 +195,7 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* =============================================
-           ALERT BANNERS
-        ============================================= */
+        /* Alerts */
         .alert {
             border-radius: var(--radius-md);
             padding: 12px 14px;
@@ -220,38 +224,43 @@
 
         .alert.visible { display: flex; }
 
-            .switch {
-                margin-top: 18px;
-                font-size: 13px;
-                color: var(--color-muted);
-            }
+        .switch {
+            margin-top: 18px;
+            font-size: 13px;
+            color: var(--color-muted);
+        }
 
-            .switch a {
-                color: var(--color-accent);
-                text-decoration: none;
-            }
+        .switch a {
+            color: var(--color-accent);
+            text-decoration: none;
+        }
 
-            .switch a:hover { text-decoration: underline; }
-
-
+        .switch a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
 
 <main class="card" role="main">
 
-    <!-- Brand -->
     <div class="brand">
-        <div class="brand-icon" aria-hidden="true">🌿</div>
+        <div class="brand-icon" aria-hidden="true">F</div>
         <span class="brand-name">Fruitables</span>
     </div>
 
-    <!-- Heading -->
-    <h1>Welcome back</h1>
-    <p class="subtitle">Sign in to your account to continue shopping.</p>
+    <h1>Create your account</h1>
+    <p class="subtitle">Register to start shopping fresh fruit and vegetables.</p>
 
-    <!-- Login Form -->
-    <form id="login-form" novalidate>
+    <form id="register-form" novalidate>
+        <div class="field">
+            <label for="input-name">Full name</label>
+            <input
+                id="input-name"
+                type="text"
+                placeholder="Your name"
+                autocomplete="name"
+                required
+            />
+        </div>
 
         <div class="field">
             <label for="input-email">Email address</label>
@@ -269,69 +278,64 @@
             <input
                 id="input-password"
                 type="password"
-                placeholder="Enter your password"
-                autocomplete="current-password"
+                placeholder="Create a strong password"
+                autocomplete="new-password"
                 required
             />
+            <p class="hint">At least 8 characters, 1 uppercase, 1 special (!@#$%^&*).</p>
         </div>
 
-        <button id="btn-login" type="submit">
+        <button id="btn-register" type="submit">
             <div class="spinner" id="spinner" aria-hidden="true"></div>
-            <span id="btn-text">Sign In</span>
+            <span id="btn-text">Create Account</span>
         </button>
-
     </form>
 
-    <!-- Error Alert -->
     <div id="alert-error" class="alert alert-error" role="alert" aria-live="polite">
-        <span>⚠</span>
-        <span id="error-message">Invalid email or password.</span>
+        <span>!</span>
+        <span id="error-message">Registration failed.</span>
     </div>
 
-    <!-- Success Alert -->
     <div id="alert-success" class="alert alert-success" role="status" aria-live="polite">
-        <span>✔</span>
-        <span id="success-message">Login successful! Token saved.</span>
+        <span>OK</span>
+        <span id="success-message">Registration successful! Redirecting...</span>
     </div>
 
-    <p class="switch">No account yet? <a href="register.html">Create one</a></p>
-
-
+    <p class="switch">Already have an account? <a href="login.html">Sign in</a></p>
 
 </main>
 
 <script>
     // =============================================
-    // LOGIN FLOW — login.html
+    // REGISTER FLOW — register.html
     // =============================================
-    // 1. Intercept the form submit event
-    // 2. Send POST /api/auth/login with credentials
-    // 3. On 200: save the JWT to localStorage, show success, redirect home
-    // 4. On 401/400/500: show an error message
+    // 1. Validate password rule on the frontend
+    // 2. Send POST /api/auth/register with user details
+    // 3. On 201: show success and redirect to login
+    // 4. On 400/500: show an error message
     // =============================================
 
-    const API_URL       = 'http://localhost:3000/api/auth/login';
-    const STORAGE_KEY   = 'fruitables_token';
+    const API_URL = 'http://localhost:3000/api/auth/register';
+
+    const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[!@#$%^&*]).{8,}$/;
 
     // DOM references
-    const form          = document.getElementById('login-form');
-    const emailInput    = document.getElementById('input-email');
+    const form = document.getElementById('register-form');
+    const nameInput = document.getElementById('input-name');
+    const emailInput = document.getElementById('input-email');
     const passwordInput = document.getElementById('input-password');
-    const btnLogin      = document.getElementById('btn-login');
-    const btnText       = document.getElementById('btn-text');
-    const spinner       = document.getElementById('spinner');
-    const alertError    = document.getElementById('alert-error');
-    const errorMessage  = document.getElementById('error-message');
-    const alertSuccess  = document.getElementById('alert-success');
-    const successMsg    = document.getElementById('success-message');
+    const btnRegister = document.getElementById('btn-register');
+    const btnText = document.getElementById('btn-text');
+    const spinner = document.getElementById('spinner');
+    const alertError = document.getElementById('alert-error');
+    const errorMessage = document.getElementById('error-message');
+    const alertSuccess = document.getElementById('alert-success');
+    const successMsg = document.getElementById('success-message');
 
-    // -------------------------------------------------------
-    // Helpers: show/hide UI states
-    // -------------------------------------------------------
     function setLoading(loading) {
-        btnLogin.disabled      = loading;
-        spinner.style.display  = loading ? 'block' : 'none';
-        btnText.textContent    = loading ? 'Signing in…' : 'Sign In';
+        btnRegister.disabled = loading;
+        spinner.style.display = loading ? 'block' : 'none';
+        btnText.textContent = loading ? 'Creating…' : 'Create Account';
     }
 
     function showError(message) {
@@ -340,10 +344,10 @@
         errorMessage.textContent = message;
     }
 
-    function showSuccess(firstName) {
+    function showSuccess(name) {
         alertSuccess.classList.add('visible');
         alertError.classList.remove('visible');
-        successMsg.textContent = `Welcome back, ${firstName}! Redirecting…`;
+        successMsg.textContent = `Welcome, ${name}! Redirecting to sign in...`;
     }
 
     function clearAlerts() {
@@ -351,58 +355,48 @@
         alertSuccess.classList.remove('visible');
     }
 
-    // -------------------------------------------------------
-    // Main submit handler
-    // -------------------------------------------------------
+    function isPasswordValid(password) {
+        return PASSWORD_REGEX.test(password);
+    }
+
     form.addEventListener('submit', async (event) => {
-        event.preventDefault(); // Stop default browser form submission
+        event.preventDefault();
         clearAlerts();
 
-        const email    = emailInput.value.trim();
+        const name = nameInput.value.trim();
+        const email = emailInput.value.trim();
         const password = passwordInput.value;
 
-        // Client-side validation (the server validates too, but we fail fast here)
-        if (!email || !password) {
-            showError('Please fill in both email and password fields.');
+        if (!name || !email || !password) {
+            showError('Please fill in all fields.');
+            return;
+        }
+
+        if (!isPasswordValid(password)) {
+            showError('Password must be 8+ chars with 1 uppercase and 1 special (!@#$%^&*).');
             return;
         }
 
         setLoading(true);
 
         try {
-            // -------------------------------------------------------
-            // Send POST request to /api/auth/login
-            // -------------------------------------------------------
             const response = await fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ name, email, password }),
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                // -------------------------------------------------------
-                // SUCCESS: Save JWT to localStorage then redirect home
-                // -------------------------------------------------------
-                localStorage.setItem(STORAGE_KEY, data.token);
-
-                showSuccess(data.user.firstName);
-
-                // Redirect to the home page after a short delay (1.2s)
-                // so the user can briefly see the success message.
+                showSuccess(data.user.firstName || name);
                 setTimeout(() => {
-                    window.location.href = 'index.html';
+                    window.location.href = 'login.html';
                 }, 1200);
             } else {
-                // -------------------------------------------------------
-                // SERVER-SIDE ERROR: 400, 401, 500 etc.
-                // -------------------------------------------------------
-                showError(data.message || 'Authentication failed. Please try again.');
+                showError(data.message || 'Registration failed. Please try again.');
             }
-
         } catch (networkError) {
-            // Fetch throws a TypeError if the server is unreachable
             showError('Cannot connect to the server. Make sure the backend is running on port 3000.');
             console.error('Network error:', networkError);
         } finally {
