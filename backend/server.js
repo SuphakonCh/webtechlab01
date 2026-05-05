@@ -50,6 +50,9 @@ const productsRoute = require('./routes/products');
 // Import the auth route module
 const authRoute = require('./routes/auth');
 
+// Import the checkout route module
+const checkoutRoute = require('./routes/checkout');
+
 // Mount the products route at the /api/products path
 // Any request to /api/products/* will be handled by the products router
 app.use('/api/products', productsRoute);
@@ -57,6 +60,10 @@ app.use('/api/products', productsRoute);
 // Mount the auth route at the /api/auth path
 // POST /api/auth/login handles user login and JWT issuance
 app.use('/api/auth', authRoute);
+
+// Mount the checkout route at the /api/checkout path
+// POST /api/checkout handles checkout validation and order saving
+app.use('/api/checkout', checkoutRoute);
 
 // -------------------------------------------------------
 // START SERVER
@@ -71,5 +78,6 @@ app.listen(port, () => {
     console.log(`  GET  /api/products       → All products`);
     console.log(`  GET  /api/products/:id   → Single product`);
     console.log(`  POST /api/auth/login     → Authenticate user + get JWT`);
+    console.log(`  POST /api/checkout       → Validate and save checkout`);
     console.log(`===================================`);
 });

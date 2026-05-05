@@ -8,8 +8,12 @@
 // and JSON.parse() to load the cart object.
 //
 // Cart structure (stored as JSON string in localStorage under key "cart"):
-//   { "3": { name: "Raspberries", price: 6.99, image: "img/...", quantity: 2 },
-//     "7": { name: "Parsley",     price: 1.99, image: "img/...", quantity: 1 } }
+//   { "3": { name: "Raspberries", price: 6.99, image: "img/...", quantity: 2, stock: 29 },
+//     "7": { name: "Parsley",     price: 1.99, image: "img/...", quantity: 1, stock: 50 } }
+//
+// The 'stock' field is the maximum quantity the user is allowed to add.
+// It is written once when the item is first added to the cart and used
+// to block further increments on both the product page and the cart page.
 // ========================================
 
 /**
@@ -45,22 +49,35 @@ function saveCart(cart) {
 
 /**
  * addToCart — Adds a product to the cart (or increments its quantity).
+ *              Blocks the increment when the current quantity already
+ *              equals the available stock.
  *
- * @param {Object} product - A product object with id, name, price, image, etc.
+ * @param {Object} product - A product object with id, name, price, image, stock, etc.
+ * @returns {boolean} true if the item was added/incremented, false if blocked by stock.
  */
 function addToCart(product) {
     const cart = getCart();
     const productId = String(product.id);
+    const maxStock = typeof product.stock === 'number' ? product.stock : Infinity;
 
     if (cart[productId]) {
-        // Product already in cart → increase quantity by 1
+        // Product already in cart — check stock limit before incrementing
+        if (cart[productId].quantity >= maxStock) {
+            console.warn(`Stock limit reached for product ${productId} (max: ${maxStock})`);
+            return false; // Signal to the caller that the add was blocked
+        }
         cart[productId].quantity += 1;
     } else {
-        // New product → add with quantity 1
+        // New product — add with quantity 1 (stock must be ≥ 1)
+        if (maxStock < 1) {
+            console.warn(`Product ${productId} is out of stock.`);
+            return false;
+        }
         cart[productId] = {
-            name: product.name,
-            price: product.price,
-            image: product.image,
+            name:     product.name,
+            price:    product.price,
+            image:    product.image,
+            stock:    maxStock, // persist so cart page can enforce the same limit
             quantity: 1
         };
     }
@@ -70,6 +87,7 @@ function addToCart(product) {
 
     // Log to console for verification
     console.log('Cart updated:', cart);
+    return true; // Successfully added / incremented
 }
 
 /**
@@ -243,15 +261,43 @@ function renderCartPage() {
  */
 function updateCartTotals() {
     const subtotalEl = document.getElementById('cart-subtotal');
-    const totalEl = document.getElementById('cart-total');
+    const totalEl    = document.getElementById('cart-total');
 
     const SHIPPING_COST = 3.00;
     const subtotal = getCartSubtotal();
-    const total = subtotal + SHIPPING_COST;
+    const total    = subtotal + SHIPPING_COST;
 
     if (subtotalEl) subtotalEl.textContent = '$' + subtotal.toFixed(2);
-    if (totalEl) totalEl.textContent = '$' + total.toFixed(2);
+    if (totalEl)    totalEl.textContent    = '$' + total.toFixed(2);
 }
+
+/**
+ * showStockLimitFeedback — Briefly flashes the + button to signal the stock ceiling.
+ *
+ * @param {HTMLElement} btn       - The cart-plus button that was blocked.
+ * @param {number}      maxStock  - The maximum stock value to show in the message.
+ */
+function showStockLimitFeedback(btn, maxStock) {
+    if (btn.dataset.stockFlashing) return; // Prevent double-trigger
+    btn.dataset.stockFlashing = 'true';
+
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML  = 'Max!';
+    btn.style.color       = '#fff';
+    btn.style.background  = '#dc3545';
+    btn.style.borderColor = '#dc3545';
+    btn.title = `Maximum stock available: ${maxStock}`;
+
+    setTimeout(function () {
+        btn.innerHTML  = originalHTML;
+        btn.style.color       = '';
+        btn.style.background  = '';
+        btn.style.borderColor = '';
+        btn.title = '';
+        delete btn.dataset.stockFlashing;
+    }, 900);
+}
+
 
 // ========================================
 // CART PAGE EVENT DELEGATION
@@ -280,8 +326,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 const id = plusBtn.getAttribute('data-id');
                 const cart = getCart();
                 if (cart[id]) {
-                    updateQuantity(id, cart[id].quantity + 1);
-                    renderCartPage(); // Re-render the cart table
+                    const maxStock = typeof cart[id].stock === 'number' ? cart[id].stock : Infinity;
+
+                    if (cart[id].quantity >= maxStock) {
+                        // Already at the stock ceiling — show feedback and block
+                        showStockLimitFeedback(plusBtn, maxStock);
+                    } else {
+                        updateQuantity(id, cart[id].quantity + 1);
+                        renderCartPage(); // Re-render the cart table
+                    }
                 }
                 return;
             }

@@ -181,6 +181,62 @@
 
 ---
 
+## [2026-05-05] สร้าง POST Route `/api/checkout` พร้อมระบบ Validation และ Error Handling
+
+### ไฟล์ที่แก้ไข
+- `backend/routes/checkout.js`
+- `backend/controllers/checkoutController.js`
+- `backend/services/checkoutService.js`
+
+### 1. Route Layer (`routes/checkout.js`)
+- Mounted ที่ `/api/checkout` ใน `server.js` อยู่แล้ว
+- เพิ่ม Comment สรุป API Contract ให้ครบถ้วน:
+  - รับ: `{ cartItems, email, cardNumber }`
+  - ตอบ `201` เมื่อสำเร็จ, ตอบ `400` เมื่อ Validation ผิดพลาดหรือ Save ล้มเหลว
+
+### 2. Controller Layer (`controllers/checkoutController.js`)
+- **Gatekeeper Validation** — ตรวจสอบทีละ Field และรวม Error ทุกอันไว้ในออบเจกต์ `errors` ก่อนตอบกลับครั้งเดียว:
+
+  | Step | ตรวจสอบ | Error Key |
+  |------|---------|-----------|
+  | 1 | Cart ต้องไม่ว่าง และทุก item ต้องมี `name`, `price ≥ 0`, `quantity > 0` | `errors.cartItems` |
+  | 2 | Email ตรง Regex `/^[^\s@]+@[^\s@]+\.[^\s@]+$/` | `errors.email` |
+  | 3 | Card Number เมื่อลบ Space/Dash แล้วต้องมี 16 หลักพอดี `/^\d{16}$/` | `errors.cardNumber` |
+
+- เพิ่ม **Cart Preservation Rule** ไว้ใน Comment อย่างชัดเจน:
+  > Frontend ต้อง **ล้างตะกร้าเฉพาะเมื่อได้รับ Status 201** เท่านั้น — ทุก 400 response ตะกร้าต้องยังอยู่ครบ
+
+- **คำนวณ Total** (Step 5) ไว้นอก `try` block เพื่อให้พร้อมใช้งานในทุกสถานการณ์
+
+- **`try...catch` scoped เฉพาะ `saveOrder`** (Step 6):
+  - `try`: บันทึก order → ตอบ `201` พร้อม `{ orderId, total }`
+  - `catch`: Log error ฝั่ง Server → ตอบ `400` พร้อม `errors.saveOrder` ที่มี message ระบุสาเหตุจริง
+
+### 3. Service Layer (`services/checkoutService.js`)
+- **`readOrders()`**: เพิ่ม `try...catch` รอบ `JSON.parse()` เพื่อ Throw Error แบบ human-readable แทนการ Crash:
+  ```
+  'orders.json contains invalid JSON and could not be read.'
+  ```
+- **`saveOrder()`**: เพิ่ม `try...catch` รอบ `fs.writeFileSync()` และ Re-throw ด้วย message ที่บอกสาเหตุ:
+  ```
+  'Could not write to orders file: <fs error message>'
+  ```
+- **Error Contract**: ทุก Error ที่ Throw จาก Service จะถูก Controller รับด้วย `err.message` และส่งไปยัง Frontend โดยตรง ทำให้ Frontend รู้ว่าผิดตรงไหน
+
+### สรุป Response Shape
+```json
+// Validation ผิดพลาด (400) — ตะกร้าไม่ถูกล้าง
+{ "error": "Validation Error", "errors": { "email": "...", "cardNumber": "..." } }
+
+// Save ล้มเหลว (400) — ตะกร้าไม่ถูกล้าง
+{ "error": "Save Error", "errors": { "saveOrder": "Could not write to orders file: ..." } }
+
+// สำเร็จ (201) — Frontend ล้างตะกร้าได้
+{ "message": "Order placed successfully.", "orderId": 1, "total": 49.95 }
+```
+
+---
+
 ## [2026-05-04] สร้างระบบ Login (Authentication & JWT)
 
 ### 1. ติดตั้ง Packages เพิ่มเติม (Backend)

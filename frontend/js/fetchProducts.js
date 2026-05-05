@@ -18,10 +18,22 @@ function renderUI(products) {
     
     // Loop through each product object in the data array
     products.forEach(product => {
-        // Create the HTML structure for a single product card.
-        // NOTE: The button now has:
-        //   - class "add-to-cart" → so our Event Delegation can identify it
-        //   - data-id="${product.id}" → so we can grab the product ID on click
+        // --- Stock badge logic ---
+        const stock = typeof product.stock === 'number' ? product.stock : null;
+        const isOutOfStock = stock !== null && stock === 0;
+
+        // Badge: green when in stock, red when out
+        const stockBadgeHTML = stock !== null
+            ? `<span class="badge ${isOutOfStock ? 'bg-danger' : 'bg-success'} ms-1" style="font-size:0.7rem;">
+                ${isOutOfStock ? 'Out of Stock' : `In Stock: ${stock}`}
+               </span>`
+            : '';
+
+        // Disable the button and change its text when stock === 0
+        const btnDisabled   = isOutOfStock ? 'disabled' : '';
+        const btnText       = isOutOfStock ? 'Out of Stock' : 'Add to cart';
+        const btnIcon       = isOutOfStock ? 'fa-times-circle' : 'fa-shopping-bag';
+
         const productHTML = `
             <div class="col-md-6 col-lg-4 col-xl-3">
                 <div class="rounded position-relative fruite-item d-flex flex-column">
@@ -33,8 +45,15 @@ function renderUI(products) {
                         <h4>${product.name}</h4>
                         <p>${product.description}</p>
                         <div class="d-flex justify-content-between flex-lg-wrap mt-auto">
-                            <p class="text-dark fs-5 fw-bold mb-0">$${product.price} / ${product.unit}</p>
-                            <button class="btn border border-secondary rounded-pill px-3 text-primary add-to-cart" data-id="${product.id}"><i class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart</button>
+                            <div>
+                                <p class="text-dark fs-5 fw-bold mb-0">$${product.price} / ${product.unit}</p>
+                                ${stockBadgeHTML}
+                            </div>
+                            <button class="btn border border-secondary rounded-pill px-3 text-primary add-to-cart"
+                                data-id="${product.id}"
+                                ${btnDisabled}>
+                                <i class="fa ${btnIcon} me-2 text-primary"></i> ${btnText}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -162,11 +181,9 @@ function applyFilters() {
  */
 function handleAddToCart(button) {
     // Step 1: Read the "data-id" attribute from the clicked button.
-    //         This gives us the unique product ID (as a string).
     const productId = button.getAttribute('data-id');
 
     // Step 2: Find the matching product in the allProducts array.
-    //         We compare as strings to avoid type-mismatch issues.
     const product = allProducts.find(function (p) {
         return String(p.id) === String(productId);
     });
@@ -177,11 +194,17 @@ function handleAddToCart(button) {
         return;
     }
 
-    // Step 4: Use the addToCart() function from cart.js
-    //         This saves the product to localStorage and updates the badge.
-    addToCart(product);
+    // Step 4: Attempt to add to cart. addToCart() now returns false if
+    //         the quantity already equals the available stock.
+    const added = addToCart(product); // product.stock is passed through here
 
-    // Step 5: Show a brief visual feedback to the user
+    if (!added) {
+        // Stock limit hit — show a distinct "Out of stock" feedback
+        showStockExceededFeedback(button, product.stock);
+        return;
+    }
+
+    // Step 5: Show the normal "Added!" visual feedback
     showAddedFeedback(button);
 }
 
@@ -204,6 +227,30 @@ function showAddedFeedback(button) {
         button.style.color = '';
     }, 1000);
 }
+
+/**
+ * showStockExceededFeedback — Shows a red "Max stock!" flash on the Add to Cart button.
+ *
+ * @param {HTMLElement} button   - The .add-to-cart button that was blocked.
+ * @param {number}      maxStock - The maximum available stock for this product.
+ */
+function showStockExceededFeedback(button, maxStock) {
+    const originalHTML = button.innerHTML;
+    button.innerHTML = `<i class="fa fa-exclamation-circle me-2"></i> Max: ${maxStock}`;
+    button.classList.add('btn-danger');
+    button.classList.remove('text-primary');
+    button.style.color = '#fff';
+    button.disabled = true;
+
+    setTimeout(function () {
+        button.innerHTML = originalHTML;
+        button.classList.remove('btn-danger');
+        button.classList.add('text-primary');
+        button.style.color = '';
+        button.disabled = false;
+    }, 1200);
+}
+
 
 // ========================================
 // INITIALIZATION — runs when the page finishes loading
