@@ -17,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/SuphakonCh/webtechlab01/issues"
   },
-  "homepage": "https://github.com/SuphakonCh/webtechlab01#readme"
+  "homepage": "https://github.com/SuphakonCh/webtechlab01#readme",
+  "dependencies": {
+    "sqlite3": "^6.0.1"
+  }
 }

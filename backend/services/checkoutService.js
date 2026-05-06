@@ -11,8 +11,14 @@
 
 const fs   = require('fs');
 const path = require('path');
+const db   = require('../db');
 
 const ORDERS_PATH = path.join(__dirname, '..', 'orders.json');
+
+const INSERT_ORDER_SQL = `
+    INSERT INTO orders (user_id, product_id, quantity, total_price)
+    VALUES (?, ?, ?, ?)
+`;
 
 /**
  * calculateTotal — Computes the total price for the cart.
@@ -54,6 +60,26 @@ function saveOrder(order) {
     return savedOrder;
 }
 
+/**
+ * saveOrderToDb — Inserts a single order row into SQLite and returns the saved order.
+ *
+ * @param {Object} orderRow - { userId, productId, quantity, totalPrice }
+ * @returns {Promise<Object>} The saved order with the new row id.
+ */
+function saveOrderToDb(orderRow) {
+    return new Promise((resolve, reject) => {
+        const { userId, productId, quantity, totalPrice } = orderRow;
+
+        db.run(INSERT_ORDER_SQL, [userId, productId, quantity, totalPrice], function (err) {
+            if (err) {
+                return reject(new Error(`SQLite insert failed: ${err.message}`));
+            }
+
+            resolve({ id: this.lastID, ...orderRow });
+        });
+    });
+}
+
 function readOrders() {
     if (!fs.existsSync(ORDERS_PATH)) {
         return [];
@@ -81,4 +107,5 @@ function generateOrderId(existingOrders) {
 module.exports = {
     calculateTotal,
     saveOrder,
+    saveOrderToDb,
 };

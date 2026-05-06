@@ -2,7 +2,8 @@
   "dependencies": {
     "bcrypt": "^6.0.0",
     "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.3"
+    "jsonwebtoken": "^9.0.3",
+    "sqlite3": "^6.0.1"
   },
   "name": "fruitables",
   "version": "1.0.0",

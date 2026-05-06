@@ -40,7 +40,7 @@ const CARD_REGEX = /^\d{16}$/;
  * @param {import('express').Request}  req
  * @param {import('express').Response} res
  */
-function checkout(req, res) {
+async function checkout(req, res) {
     // Destructure with a safe default so missing body never throws
     const { cartItems, email, cardNumber } = req.body || {};
 
@@ -123,13 +123,21 @@ function checkout(req, res) {
     // (disk I/O error, corrupt JSON, etc.) we surface a specific saveOrder
     // error and respond 400 — again WITHOUT clearing the cart.
     try {
-        const savedOrder = checkoutService.saveOrder(order);
+        // วนลูปบันทึกสินค้าในตะกร้าแต่ละชิ้นลงใน SQLite
+        const savedOrders = await Promise.all(cartItems.map(async (item) => {
+            return await checkoutService.saveOrderToDb({
+                userId: 1, // กำหนดเป็น 1 ไว้ก่อน (หรือดึงจาก req.user ถ้ามีระบบ Login)
+                productId: item.id || 0, // ดึงรหัสสินค้า หรือใช้ 0 กรณีหาไม่เจอ
+                quantity: item.quantity,
+                totalPrice: item.price * item.quantity
+            });
+        }));
 
         // SUCCESS — only on 201 should the frontend clear the cart
         return res.status(201).json({
             message: 'Order placed successfully.',
-            orderId: savedOrder.id,
-            total:   savedOrder.total,
+            orderId: savedOrders[0] ? savedOrders[0].id : null,
+            total:   total,
         });
 
     } catch (err) {
