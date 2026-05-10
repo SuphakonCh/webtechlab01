@@ -1,52 +1,39 @@
 // ========================================
 // SERVICE LAYER — registerService.js
 // ========================================
-// Handles user registration data access:
-//   1. Read auth_user.json
-//   2. Find user by email (username)
-//   3. Save new user record
+// รับผิดชอบ business logic ของการลงทะเบียนผู้ใช้ใหม่:
+//   1. ตรวจสอบว่า email ซ้ำหรือไม่ (ผ่าน Repository)
+//   2. บันทึก user ใหม่ (ผ่าน Repository)
+//
+// ก่อนปรับปรุง (Monolithic):
+//   Service อ่าน/เขียน auth_user.json เอง
+//   → มี fs.readFileSync, fs.writeFileSync อยู่ใน Service
+//
+// หลังปรับปรุง (Repository Pattern):
+//   Service เรียก authUserRepository.findByEmail() และ .save()
+//   → Service เหลือแค่ business logic ล้วน ๆ
 // ========================================
 
-const fs = require('fs');
-const path = require('path');
+const authUserRepository = require('../repositories/authUserRepository');
 
-const USERS_PATH = path.join(__dirname, '..', 'auth_user.json');
-
-function readUsers() {
-    const raw = fs.readFileSync(USERS_PATH, 'utf-8');
-    const users = JSON.parse(raw);
-    return Array.isArray(users) ? users : [];
-}
-
+/**
+ * findUserByEmail — ค้นหา user ตาม email (ผ่าน Repository)
+ *
+ * @param {string} email - Email ที่ต้องการค้นหา
+ * @returns {Object|null} User object หรือ null
+ */
 function findUserByEmail(email) {
-    const users = readUsers();
-    const lowered = email.toLowerCase();
-    const user = users.find((u) => String(u.username || '').toLowerCase() === lowered);
-    return user || null;
+    return authUserRepository.findByEmail(email);
 }
 
-function getNextId(users) {
-    if (!Array.isArray(users) || users.length === 0) return 1;
-    const maxId = users.reduce((max, u) => Math.max(max, Number(u.id) || 0), 0);
-    return maxId + 1;
-}
-
+/**
+ * saveUser — บันทึก user ใหม่ (ผ่าน Repository)
+ *
+ * @param {Object} newUser - User object ที่ต้องการบันทึก
+ * @returns {Object} User object ที่บันทึกแล้ว (พร้อม id)
+ */
 function saveUser(newUser) {
-    const users = readUsers();
-    const nextId = getNextId(users);
-
-    const userToSave = {
-        id: nextId,
-        username: newUser.username,
-        password: newUser.password,
-        firstName: newUser.firstName,
-        registeredAt: newUser.registeredAt,
-    };
-
-    users.push(userToSave);
-    fs.writeFileSync(USERS_PATH, JSON.stringify(users, null, 2));
-
-    return userToSave;
+    return authUserRepository.save(newUser);
 }
 
 module.exports = {

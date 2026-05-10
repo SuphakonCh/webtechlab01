@@ -2,11 +2,16 @@
 // CONTROLLER LAYER — checkoutController.js
 // ========================================
 // Orchestrates the full checkout flow:
-//   1. Validate cart items
+//   1. Validate cart items (format)
 //   2. Validate email (regex)
 //   3. Validate 16-digit card number (regex)
-//   4. Calculate order total
-//   5. Attempt to save the order (wrapped in try...catch)
+//   4. Validate products + price + stock จาก server (ป้องกัน Price Manipulation)
+//   5. Calculate order total (จากราคาที่ server ตรวจสอบแล้ว)
+//   6. Attempt to save the order (wrapped in try...catch)
+//
+// 🔒 PROTECTED ROUTE:
+//   Route นี้ผ่าน authMiddleware (verifyToken) ก่อนถึง controller
+//   ดังนั้น req.user จะมีค่าเสมอ (id, email, firstName จาก JWT)
 //
 // KEY DESIGN RULE — Cart Preservation:
 //   Any 400 response (validation OR save failure) deliberately does NOT
@@ -34,6 +39,7 @@ const CARD_REGEX = /^\d{16}$/;
  * Success response  → 201 { message, orderId, total }
  * Validation error  → 400 { error, message, errors: { <fieldName>: string } }
  * Save failure      → 400 { error, message, errors: { saveOrder: string } }
+ * Unauthorized      → 401 (handled by authMiddleware before this controller)
  *
  * In all 400 cases the frontend MUST NOT clear the user's cart.
  *
@@ -48,7 +54,7 @@ async function checkout(req, res) {
     const errors = {};
 
     // -------------------------------------------------------
-    // STEP 1 — Validate cart items
+    // STEP 1 — Validate cart items (format check)
     // -------------------------------------------------------
     // Rule: must be a non-empty array; every item needs a non-empty
     // name string, a non-negative finite price, and a positive integer quantity.
@@ -90,7 +96,7 @@ async function checkout(req, res) {
     }
 
     // -------------------------------------------------------
-    // STEP 4 — Return all validation errors (cart stays intact)
+    // STEP 4 — Return all format validation errors (cart stays intact)
     // -------------------------------------------------------
     // If ANY field failed, respond 400 immediately with the full errors map.
     // The frontend reads this response and shows per-field messages WITHOUT
@@ -104,38 +110,54 @@ async function checkout(req, res) {
     }
 
     // -------------------------------------------------------
-    // STEP 5 — Calculate order total
+    // STEP 5 — Validate products + price + stock จาก server
     // -------------------------------------------------------
-    // Computed here (outside try) so it is available in any future catch branch.
-    const total = checkoutService.calculateTotal(cartItems);
+    // ป้องกัน Price Manipulation: แทนที่ราคาจาก client ด้วยราคาจริง
+    // จาก products.json และเช็คว่า stock เพียงพอ
+    const { validatedItems, errors: productErrors } =
+        checkoutService.validateAndEnrichCartItems(cartItems);
+
+    if (productErrors.length > 0) {
+        return res.status(400).json({
+            error: 'Product Validation Error',
+            message: 'สินค้าบางรายการไม่ถูกต้องหรือมีไม่เพียงพอ',
+            errors: { products: productErrors },
+        });
+    }
+
+    // -------------------------------------------------------
+    // STEP 6 — Calculate order total (จากราคาที่ server ตรวจสอบแล้ว)
+    // -------------------------------------------------------
+    // ใช้ validatedItems (ราคาจาก server) ไม่ใช่ cartItems (ราคาจาก client)
+    const total = checkoutService.calculateTotal(validatedItems);
 
     const order = {
         email:       email.trim(),
-        cartItems,
+        cartItems:   validatedItems,   // ← ใช้สินค้าที่ verify แล้ว
         total,
         cardLast4:   normalizedCard.slice(-4), // store only the last 4 digits
     };
 
     // -------------------------------------------------------
-    // STEP 6 — Attempt to save order (try...catch)
+    // STEP 7 — Attempt to save order (try...catch)
     // -------------------------------------------------------
     // The try block is scoped ONLY to the save step. If the write fails
     // (disk I/O error, corrupt JSON, etc.) we surface a specific saveOrder
     // error and respond 400 — again WITHOUT clearing the cart.
     try {
         // วนลูปบันทึกสินค้าในตะกร้าแต่ละชิ้นลงใน SQLite
-        const savedOrders = await Promise.all(cartItems.map(async (item) => {
+        const savedOrders = await Promise.all(validatedItems.map(async (item) => {
             return await checkoutService.saveOrderToDb({
-                userId: 1, // กำหนดเป็น 1 ไว้ก่อน (หรือดึงจาก req.user ถ้ามีระบบ Login)
-                productId: item.id || 0, // ดึงรหัสสินค้า หรือใช้ 0 กรณีหาไม่เจอ
+                userId: req.user.id,     // ← ดึงจาก JWT Token (ผ่าน authMiddleware)
+                productId: item.id || 0,
                 quantity: item.quantity,
-                totalPrice: item.price * item.quantity
+                totalPrice: item.price * item.quantity  // ← ราคาจริงจาก server
             });
         }));
 
         // SUCCESS — only on 201 should the frontend clear the cart
         return res.status(201).json({
-            message: 'Order placed successfully.',
+            message: `สั่งซื้อสำเร็จ! ขอบคุณครับ ${req.user.firstName}`,
             orderId: savedOrders[0] ? savedOrders[0].id : null,
             total:   total,
         });

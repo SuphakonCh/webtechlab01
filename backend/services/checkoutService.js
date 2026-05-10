@@ -1,30 +1,76 @@
 // ========================================
 // SERVICE LAYER — checkoutService.js
 // ========================================
-// Handles order total calculation and persistence.
+// รับผิดชอบ business logic ของการ Checkout:
+//   1. ตรวจสอบสินค้า + แทนที่ราคาจาก server (ป้องกัน Price Manipulation)
+//   2. เช็ค stock ก่อนสั่งซื้อ
+//   3. คำนวณยอดรวม (calculateTotal)
+//   4. บันทึก order (ผ่าน Repository)
+//
+// หลังปรับปรุง (Task 3 + 4):
+//   เพิ่ม validateAndEnrichCartItems() ที่:
+//   - ดึงราคาจริงจาก productService (ไม่เชื่อ client)
+//   - เช็ค stock ก่อนยอมให้สั่ง
+//   - Return สินค้าที่ verified แล้วพร้อมราคาจริง
 //
 // Error contract:
-//   Any function here that fails THROWS an Error with a descriptive
-//   .message string. The controller layer catches these and surfaces
-//   them as specific per-field error responses.
+//   ถ้า Repository throw Error → Service ส่งต่อให้ Controller จัดการ
 // ========================================
 
-const fs   = require('fs');
-const path = require('path');
-const db   = require('../db');
-
-const ORDERS_PATH = path.join(__dirname, '..', 'orders.json');
-
-const INSERT_ORDER_SQL = `
-    INSERT INTO orders (user_id, product_id, quantity, total_price)
-    VALUES (?, ?, ?, ?)
-`;
+const orderRepository = require('../repositories/orderRepository');
+const productService  = require('./productService');
 
 /**
- * calculateTotal — Computes the total price for the cart.
+ * validateAndEnrichCartItems — ตรวจสอบสินค้าในตะกร้ากับข้อมูล server
  *
- * @param {Array} cartItems - Array of cart items with price and quantity.
- * @returns {number} The total price.
+ * สิ่งที่ทำ:
+ *   1. ตรวจว่า product ID มีจริงใน products.json
+ *   2. แทนที่ราคาจาก client ด้วยราคาจริงจาก server (ป้องกัน Price Manipulation)
+ *   3. เช็คว่า stock เพียงพอต่อจำนวนที่สั่ง
+ *
+ * @param {Array} cartItems - สินค้าจาก client (req.body.cartItems)
+ * @returns {{ validatedItems: Array, errors: Array }}
+ *   - validatedItems: สินค้าที่ตรวจสอบแล้ว พร้อมราคาจริงจาก server
+ *   - errors: array ของ error messages (ถ้ามี)
+ */
+function validateAndEnrichCartItems(cartItems) {
+    const validatedItems = [];
+    const errors = [];
+
+    for (const item of cartItems) {
+        // ❶ ตรวจว่าสินค้ามีจริงหรือไม่
+        const product = productService.getProductById(item.id);
+
+        if (!product) {
+            errors.push(`สินค้า ID ${item.id} ("${item.name}") ไม่มีในระบบ`);
+            continue;
+        }
+
+        // ❷ เช็ค stock — สินค้าในคลังเพียงพอไหม
+        if (typeof product.stock === 'number' && product.stock < item.quantity) {
+            errors.push(
+                `"${product.name}" มีในคลังแค่ ${product.stock} ${product.unit || 'ชิ้น'} `
+                + `แต่สั่ง ${item.quantity}`
+            );
+            continue;
+        }
+
+        // ❸ ใช้ราคาจาก server แทนราคาจาก client (ป้องกัน Price Manipulation)
+        validatedItems.push({
+            ...item,
+            price: product.price,       // ← ราคาจริงจาก products.json
+            serverVerified: true,       // flag ว่าผ่านการตรวจสอบแล้ว
+        });
+    }
+
+    return { validatedItems, errors };
+}
+
+/**
+ * calculateTotal — คำนวณยอดรวมของสินค้าในตะกร้า
+ *
+ * @param {Array} cartItems - Array ของสินค้าที่มี price และ quantity
+ * @returns {number} ยอดรวมทั้งหมด
  */
 function calculateTotal(cartItems) {
     return cartItems.reduce((sum, item) => {
@@ -33,78 +79,27 @@ function calculateTotal(cartItems) {
 }
 
 /**
- * saveOrder — Writes the order to orders.json and returns the saved order.
+ * saveOrder — บันทึก order ลง JSON file (ผ่าน Repository)
  *
- * @param {Object} order - The order object to save.
- * @returns {Object} The saved order with id and createdAt.
+ * @param {Object} order - Order object ที่ต้องการบันทึก
+ * @returns {Object} Order ที่บันทึกแล้ว
  */
 function saveOrder(order) {
-    // readOrders() will throw if the existing file is corrupt
-    const existingOrders = readOrders();
-
-    const savedOrder = {
-        id:        generateOrderId(existingOrders),
-        createdAt: new Date().toISOString(),
-        ...order,
-    };
-
-    existingOrders.push(savedOrder);
-
-    try {
-        fs.writeFileSync(ORDERS_PATH, JSON.stringify(existingOrders, null, 2), 'utf-8');
-    } catch (fsErr) {
-        // Re-throw with a human-readable message the controller can forward
-        throw new Error(`Could not write to orders file: ${fsErr.message}`);
-    }
-
-    return savedOrder;
+    return orderRepository.saveToFile(order);
 }
 
 /**
- * saveOrderToDb — Inserts a single order row into SQLite and returns the saved order.
+ * saveOrderToDb — บันทึก order ลง SQLite (ผ่าน Repository)
  *
  * @param {Object} orderRow - { userId, productId, quantity, totalPrice }
- * @returns {Promise<Object>} The saved order with the new row id.
+ * @returns {Promise<Object>} Order ที่บันทึกแล้ว
  */
 function saveOrderToDb(orderRow) {
-    return new Promise((resolve, reject) => {
-        const { userId, productId, quantity, totalPrice } = orderRow;
-
-        db.run(INSERT_ORDER_SQL, [userId, productId, quantity, totalPrice], function (err) {
-            if (err) {
-                return reject(new Error(`SQLite insert failed: ${err.message}`));
-            }
-
-            resolve({ id: this.lastID, ...orderRow });
-        });
-    });
-}
-
-function readOrders() {
-    if (!fs.existsSync(ORDERS_PATH)) {
-        return [];
-    }
-
-    const rawData = fs.readFileSync(ORDERS_PATH, 'utf-8');
-    if (!rawData || rawData.trim() === '') return [];
-
-    try {
-        return JSON.parse(rawData);
-    } catch (parseErr) {
-        // Throw a descriptive error so saveOrder (and the controller) know exactly what failed
-        throw new Error('orders.json contains invalid JSON and could not be read.');
-    }
-}
-
-function generateOrderId(existingOrders) {
-    if (existingOrders.length === 0) return 1;
-    const maxId = existingOrders.reduce((max, order) => {
-        return order.id > max ? order.id : max;
-    }, 0);
-    return maxId + 1;
+    return orderRepository.saveToDb(orderRow);
 }
 
 module.exports = {
+    validateAndEnrichCartItems,
     calculateTotal,
     saveOrder,
     saveOrderToDb,

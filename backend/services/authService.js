@@ -1,56 +1,45 @@
 // ========================================
 // SERVICE LAYER — authService.js
 // ========================================
-// Responsible for all authentication-related business logic:
-//   1. Finding a user record by email (username)
-//   2. Comparing a submitted plaintext password against a bcrypt hash
+// รับผิดชอบ business logic ของการ Authentication:
+//   1. ค้นหา user จาก email (ผ่าน Repository)
+//   2. ตรวจสอบ password ด้วย bcrypt
 //
-// This layer has NO knowledge of HTTP, Express, req, or res.
-// It simply receives data, processes it, and returns a result.
+// ก่อนปรับปรุง (Monolithic):
+//   Service อ่าน fs.readFileSync('users.json') เอง
+//   → ผูกติดกับ file system โดยตรง
+//
+// หลังปรับปรุง (Repository Pattern):
+//   Service เรียก userRepository.findByEmail()
+//   → ไม่รู้ว่าข้อมูลมาจาก JSON, SQLite, หรือ API
+//
+// Service นี้ไม่มี HTTP, req, res — มีแค่ pure logic
 // ========================================
 
-const fs     = require('fs');
-const path   = require('path');
-const bcrypt = require('bcrypt');
-
-// Absolute path to the users data file
-const USERS_PATH = path.join(__dirname, '..', 'users.json');
+const bcrypt         = require('bcrypt');
+const userRepository = require('../repositories/userRepository');
 
 /**
- * findUserByEmail
- * ---------------
- * Reads users.json and returns the user object whose `username`
- * matches the provided email (case-insensitive).
+ * findUserByEmail — ค้นหา user ตาม email
+ * Delegate ไปที่ Repository layer
  *
- * @param {string} email - The email address submitted by the client.
- * @returns {Object|null} The matching user object, or null if not found.
+ * @param {string} email - Email ที่ต้องการค้นหา
+ * @returns {Object|null} User object หรือ null
  */
 function findUserByEmail(email) {
-    const rawData = fs.readFileSync(USERS_PATH, 'utf-8');
-    const users   = JSON.parse(rawData);
-
-    // .find() returns the first match, or undefined if none
-    const user = users.find(
-        (u) => u.username.toLowerCase() === email.toLowerCase()
-    );
-
-    return user || null; // Return null instead of undefined for clarity
+    return userRepository.findByEmail(email);
 }
 
 /**
- * verifyPassword
- * --------------
- * Uses bcrypt.compare() to safely check if the submitted plaintext
- * password matches the stored bcrypt hash. bcrypt internally handles
- * extracting the salt from the stored hash and re-hashing the input.
+ * verifyPassword — ตรวจสอบ password ด้วย bcrypt.compare()
  *
- * SECURITY NOTE: bcrypt.compare() is timing-safe — it takes the same
- * amount of time regardless of how early a character mismatch occurs,
- * preventing timing-based attacks.
+ * SECURITY NOTE: bcrypt.compare() เป็น timing-safe
+ * ใช้เวลาเท่ากันไม่ว่า password จะผิดตรงตัวอักษรไหน
+ * ป้องกัน timing-based attacks
  *
- * @param {string} plaintextPassword - The raw password from the login form.
- * @param {string} hashedPassword    - The bcrypt hash stored in users.json.
- * @returns {Promise<boolean>}       - Resolves to true if passwords match.
+ * @param {string} plaintextPassword - Password ที่ user กรอก
+ * @param {string} hashedPassword    - bcrypt hash ที่เก็บใน database
+ * @returns {Promise<boolean>}       - true ถ้า password ตรงกัน
  */
 async function verifyPassword(plaintextPassword, hashedPassword) {
     return bcrypt.compare(plaintextPassword, hashedPassword);

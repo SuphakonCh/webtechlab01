@@ -266,3 +266,124 @@
   - ใช้ `fetch` ยิง Request POST ไปยัง API
   - จัดเก็บ Token ลงใน **`localStorage`** อัตโนมัติ หากล็อกอินสำเร็จ
   - แสดง Alert แจ้งเตือนข้อผิดพลาด หากข้อมูลไม่ถูกต้องหรืออีเมลไม่มีในระบบ (โดยใช้ข้อความผิดพลาดเดียวกันคือ `Invalid email or password.` เพื่อป้องกัน User Enumeration Attack)
+
+---
+
+## [2026-05-09] Separation of Concerns — Repository Pattern
+
+### แนวคิด
+Refactor จาก architecture **3 ชั้น** (Route → Controller → Service) เป็น **4 ชั้น** (Route → Controller → Service → **Repository**) เพื่อแยก "การเข้าถึงข้อมูล" ออกจาก "business logic" อย่างชัดเจน
+
+### ไฟล์ใหม่ที่สร้าง (Repository Layer)
+
+| ไฟล์ | หน้าที่ | Data Source |
+|------|---------|-------------|
+| `repositories/productRepository.js` | `findAll()`, `findById()`, `findByCategory()` | `products.json` |
+| `repositories/userRepository.js` | `findAll()`, `findByEmail()` | `users.json` |
+| `repositories/authUserRepository.js` | `findAll()`, `findByEmail()`, `save()` | `auth_user.json` |
+| `repositories/orderRepository.js` | `readAllFromFile()`, `saveToFile()`, `saveToDb()` | `orders.json` + SQLite |
+
+### ไฟล์ที่แก้ไข (Service Layer — ลบ Data Access ออก)
+
+| ไฟล์ | สิ่งที่ลบออก | สิ่งที่เพิ่ม |
+|------|-------------|-------------|
+| `services/productService.js` | `fs.readFileSync()`, `JSON.parse()` | `require('productRepository')` |
+| `services/authService.js` | `fs.readFileSync()`, `JSON.parse()` | `require('userRepository')` |
+| `services/registerService.js` | `fs.readFileSync()`, `fs.writeFileSync()` | `require('authUserRepository')` |
+| `services/checkoutService.js` | `db.run()` SQL, `fs.readFileSync()` | `require('orderRepository')` |
+
+### ไฟล์ที่แก้ไข (อื่น ๆ)
+- **`server.js`**: อัปเดต comment ให้สะท้อน architecture 4 ชั้นใหม่
+
+### ไฟล์ที่ไม่เปลี่ยน
+- `routes/*` — แยกอยู่แล้ว (แค่ map URL → Controller)
+- `controllers/*` — แยกอยู่แล้ว (validate + orchestrate)
+
+### ข้อดีของ Repository Pattern
+1. **เปลี่ยน Data Source ได้** — แก้แค่ Repository ไฟล์เดียว (JSON → PostgreSQL → MongoDB)
+2. **Unit Test ง่ายขึ้น** — mock ที่ชั้น Repository แทนการ mock `fs` module
+3. **Microservice-Ready** — แต่ละ domain (Product, User, Order) มี Repository ของตัวเอง
+4. **Service สะอาดขึ้น** — เหลือแค่ business logic ไม่มี `require('fs')` อีกต่อไป
+
+---
+
+## [2026-05-10] Security Hardening — เตรียม Order Domain สำหรับ Microservice
+
+### ปัญหาที่พบจากการวิเคราะห์ Dependency
+
+| # | ช่องโหว่ | ระดับ |
+|---|---------|-------|
+| 1 | Checkout ไม่เช็คว่า Login แล้วหรือยัง | 🔴 วิกฤต |
+| 2 | `userId: 1` Hardcoded — ทุก order เป็นของ user คนเดียว | 🔴 วิกฤต |
+| 3 | เชื่อราคาจาก Client — เสี่ยง Price Manipulation | 🔴 วิกฤต |
+| 4 | ไม่เช็ค Stock ก่อนสั่ง — สั่งเกินจำนวนในคลังได้ | 🟡 สำคัญ |
+| 5 | Frontend ไม่ส่ง JWT Token ใน header | 🔴 วิกฤต |
+
+### Task 1: สร้าง Auth Middleware (ตรวจ JWT Token)
+
+**ไฟล์ใหม่:** `middleware/authMiddleware.js`
+- `verifyToken(req, res, next)` — Express middleware ที่:
+  - อ่าน `Authorization: Bearer <token>` จาก header
+  - ตรวจสอบ token ด้วย `jwt.verify()`
+  - ถ้า token ถูกต้อง → ใส่ข้อมูลลง `req.user` → `next()`
+  - ถ้า token ไม่มี/หมดอายุ → ตอบ `401 Unauthorized`
+
+**ไฟล์ที่แก้:** `routes/checkout.js`
+- เพิ่ม `verifyToken` ก่อน `checkoutController.checkout`:
+  ```javascript
+  router.post('/', verifyToken, checkoutController.checkout);
+  ```
+
+### Task 2: เปลี่ยน `userId: 1` → `req.user.id`
+
+**ไฟล์ที่แก้:** `controllers/checkoutController.js` (บรรทัด 129 เดิม)
+```diff
+- userId: 1, // กำหนดเป็น 1 ไว้ก่อน
++ userId: req.user.id, // ดึงจาก JWT Token (ผ่าน authMiddleware)
+```
+
+### Task 3: Validate ราคาสินค้าจาก Server (ป้องกัน Price Manipulation)
+
+**ไฟล์ที่แก้:** `services/checkoutService.js`
+- เพิ่มฟังก์ชัน `validateAndEnrichCartItems(cartItems)`:
+  - วนลูปตรวจสอบแต่ละ item ว่ามีจริงใน `products.json`
+  - **แทนที่ราคาจาก client ด้วยราคาจริงจาก server** (`product.price`)
+  - Return `{ validatedItems, errors }`
+
+**ไฟล์ที่แก้:** `controllers/checkoutController.js`
+- เพิ่ม Step 5 (Validate products + price + stock) ก่อนคำนวณ total
+- ใช้ `validatedItems` (ราคาจาก server) แทน `cartItems` (ราคาจาก client) ตลอด flow
+
+### Task 4: เช็ค Stock ก่อนสั่งซื้อ
+
+**ไฟล์ที่แก้:** `services/checkoutService.js` (ภายใน `validateAndEnrichCartItems()`)
+- เพิ่มการตรวจสอบ: `if (product.stock < item.quantity)` → error
+- แจ้งข้อความ: `"สินค้า X มีในคลังแค่ Y ชิ้น แต่สั่ง Z"`
+
+### Task 5: อัปเดต Frontend ส่ง JWT Token
+
+**ไฟล์ใหม่:** `frontend/js/checkout.js`
+- เช็คว่า login แล้วหรือยัง (ดูจาก `localStorage.getItem('token')`)
+- ถ้าไม่มี token → redirect ไป `login.html`
+- แสดงสินค้าจาก cart (localStorage) ในตาราง
+- ส่ง `POST /api/checkout` พร้อม header `Authorization: Bearer <token>`
+- จัดการ response: 201 (ล้างตะกร้า), 401 (redirect login), 400 (แสดง error)
+
+**ไฟล์ที่แก้:** `frontend/checkout.html`
+- เพิ่ม `id="email-input"` ให้ช่อง Email
+- เพิ่มช่อง Card Number (`id="card-number-input"`)
+- เปลี่ยนตารางสินค้าจาก static → dynamic (`id="checkout-table-body"`)
+- เพิ่ม `id="place-order-btn"` ให้ปุ่ม Place Order
+- เพิ่ม `<div id="checkout-result">` สำหรับแสดงผลลัพธ์
+- เพิ่ม `<script src="js/cart.js">` และ `<script src="js/checkout.js">`
+
+### สรุป Security Checklist
+
+| # | ช่องโหว่ | สถานะ |
+|---|---------|-------|
+| 1 | Checkout ไม่เช็ค login | ✅ แก้แล้ว (authMiddleware) |
+| 2 | `userId: 1` hardcoded | ✅ แก้แล้ว (`req.user.id` จาก JWT) |
+| 3 | Price Manipulation จาก client | ✅ แก้แล้ว (validate ราคาจาก server) |
+| 4 | ไม่เช็ค stock | ✅ แก้แล้ว (เช็คก่อนสั่ง) |
+| 5 | Frontend ไม่ส่ง token | ✅ แก้แล้ว (`Authorization: Bearer`) |
+

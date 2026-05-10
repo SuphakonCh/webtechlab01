@@ -8,19 +8,21 @@
 //   3. Mounts the route modules
 //   4. Starts listening on a port
 //
-// Architecture overview (Controller-Route-Service pattern):
+// Architecture overview (Controller-Route-Service-Repository pattern):
 //
 //   Client Request
 //       ↓
 //   server.js (entry point)
 //       ↓
-//   routes/products.js (defines URL paths)
+//   routes/*.js (defines URL paths — เส้นทาง)
 //       ↓
-//   controllers/productController.js (handles req/res)
+//   controllers/*.js (handles req/res — Gatekeeper / Orchestrator)
 //       ↓
-//   services/productService.js (business logic + data access)
+//   services/*.js (business logic only — กฎเกณฑ์ทางธุรกิจ)
 //       ↓
-//   products.json (data source)
+//   repositories/*.js (data access — อ่าน/เขียนข้อมูล)
+//       ↓
+//   Data Source (JSON files / SQLite / etc.)
 //
 // ========================================
 

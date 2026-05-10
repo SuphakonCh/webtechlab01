@@ -1,62 +1,47 @@
 // ========================================
 // SERVICE LAYER — productService.js
 // ========================================
-// The Service layer is responsible for the "business logic" and data access.
-// It reads from the data source (products.json) and returns the results.
-// The Service does NOT know anything about HTTP requests or responses.
-// This separation makes the code reusable and testable.
+// Service layer รับผิดชอบเฉพาะ "business logic" เท่านั้น
+// ไม่อ่านไฟล์เอง — เรียกผ่าน Repository แทน
+//
+// ก่อนปรับปรุง (Monolithic):
+//   Service อ่าน fs.readFileSync + JSON.parse เอง
+//   → ถ้าเปลี่ยน data source ต้องแก้ Service
+//
+// หลังปรับปรุง (Repository Pattern):
+//   Service เรียก productRepository.findAll()
+//   → ถ้าเปลี่ยน data source แก้แค่ Repository
 // ========================================
 
-const fs = require('fs');
-const path = require('path');
-
-// Build the absolute path to products.json
-// path.join(__dirname, '..') goes up one folder from /services to the project root
-const DATA_PATH = path.join(__dirname, '..', 'products.json');
+const productRepository = require('../repositories/productRepository');
 
 /**
- * getAllProducts — Reads the products.json file and returns all products.
- * If a category is provided, it filters the products by that category.
+ * getAllProducts — ดึงสินค้าทั้งหมด หรือ filter ตาม category
  *
- * @param {string} [category] - Optional category to filter by (e.g., 'Fruits').
- * @returns {Array} An array of product objects.
- * @throws {Error} If the file cannot be read or parsed.
+ * @param {string} [category] - Optional category ที่ต้องการ filter
+ * @returns {Array} Array ของ product objects
  */
 function getAllProducts(category) {
-    // Read the file from disk (synchronous for simplicity)
-    const rawData = fs.readFileSync(DATA_PATH, 'utf-8');
-
-    // Parse the JSON string into a JavaScript array of objects
-    let products = JSON.parse(rawData);
-
-    // If a category was provided in the request, filter the array
+    // ถ้ามี category → ใช้ repository method ที่ filter ให้เลย
     if (category) {
-        // We use toLowerCase() to make the search case-insensitive
-        const lowerCaseCategory = category.toLowerCase();
-        products = products.filter(p => p.category && p.category.toLowerCase() === lowerCaseCategory);
+        return productRepository.findByCategory(category);
     }
-
-    return products;
+    // ไม่มี category → ดึงทั้งหมด
+    return productRepository.findAll();
 }
 
 /**
- * getProductById — Finds a single product by its ID.
+ * getProductById — ค้นหาสินค้า 1 ชิ้นจาก ID
  *
- * @param {number|string} id - The product ID to search for.
- * @returns {Object|null} The matching product object, or null if not found.
+ * @param {number|string} id - Product ID
+ * @returns {Object|null} Product object หรือ null
  */
 function getProductById(id) {
-    const products = getAllProducts();
-
-    // Find the product whose id matches the given id
-    // We convert both to Number to ensure consistent comparison
-    const product = products.find(p => p.id === Number(id));
-
-    return product || null;
+    return productRepository.findById(id);
 }
 
 // Export the functions so the Controller can use them
 module.exports = {
     getAllProducts,
-    getProductById
+    getProductById,
 };
