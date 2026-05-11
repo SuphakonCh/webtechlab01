@@ -31,7 +31,7 @@ const authService = require('../services/authService');
 // And load it with the 'dotenv' package in server.js.
 // -------------------------------------------------------
 const JWT_SECRET  = process.env.JWT_SECRET || 'fruitables_super_secret_key_change_in_production';
-const JWT_EXPIRES = '2h'; // Token expires in 2 hours
+const JWT_EXPIRES = process.env.JWT_EXPIRES_IN || '2h'; // Token expiry from .env
 
 /**
  * login — Controller for POST /api/login

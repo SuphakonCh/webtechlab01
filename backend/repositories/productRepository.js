@@ -17,15 +17,31 @@ const path = require('path');
 // Absolute path to the products data file
 const DATA_PATH = path.join(__dirname, '..', 'products.json');
 
+// -------------------------------------------------------
+// IN-MEMORY CACHE — load once at startup, serve from RAM
+// -------------------------------------------------------
+let cachedProducts = null;
+
 /**
- * findAll — อ่านข้อมูลสินค้าทั้งหมดจาก products.json
+ * loadProducts — อ่าน products.json ครั้งเดียวแล้ว cache ไว้ใน memory
+ * @private
+ */
+function loadProducts() {
+    const rawData = fs.readFileSync(DATA_PATH, 'utf-8');
+    cachedProducts = JSON.parse(rawData);
+    console.log(`[ProductRepo] Loaded ${cachedProducts.length} products into cache`);
+    return cachedProducts;
+}
+
+/**
+ * findAll — อ่านข้อมูลสินค้าทั้งหมด (จาก cache)
  *
  * @returns {Array} Array ของ product objects ทั้งหมด
  * @throws {Error} ถ้าอ่านไฟล์ไม่ได้ หรือ JSON ไม่ถูกต้อง
  */
 function findAll() {
-    const rawData = fs.readFileSync(DATA_PATH, 'utf-8');
-    return JSON.parse(rawData);
+    if (!cachedProducts) loadProducts();
+    return cachedProducts;
 }
 
 /**

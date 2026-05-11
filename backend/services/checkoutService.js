@@ -42,7 +42,8 @@ function validateAndEnrichCartItems(cartItems) {
         const product = productService.getProductById(item.id);
 
         if (!product) {
-            errors.push(`สินค้า ID ${item.id} ("${item.name}") ไม่มีในระบบ`);
+            // SECURITY: Only echo the ID (server-controlled), not item.name (client-controlled)
+            errors.push(`สินค้า ID ${item.id} ไม่มีในระบบ`);
             continue;
         }
 
@@ -89,13 +90,18 @@ function saveOrder(order) {
 }
 
 /**
- * saveOrderToDb — บันทึก order ลง SQLite (ผ่าน Repository)
+ * saveOrderToDb — บันทึก order ลง SQLite พร้อม atomic stock decrement
+ *
+ * ใช้ Transaction เพื่อป้องกัน Race Condition (TOCTOU):
+ *   1. UPDATE stock SET stock = stock - qty WHERE stock >= qty
+ *   2. INSERT INTO orders
+ *   ถ้า stock ไม่พอ → ROLLBACK → reject
  *
  * @param {Object} orderRow - { userId, productId, quantity, totalPrice }
  * @returns {Promise<Object>} Order ที่บันทึกแล้ว
  */
 function saveOrderToDb(orderRow) {
-    return orderRepository.saveToDb(orderRow);
+    return orderRepository.saveToDbWithStockCheck(orderRow);
 }
 
 module.exports = {

@@ -16,15 +16,24 @@ const path = require('path');
 // Absolute path to the auth_user data file (สำหรับ Register)
 const AUTH_USERS_PATH = path.join(__dirname, '..', 'auth_user.json');
 
+// -------------------------------------------------------
+// IN-MEMORY CACHE — invalidated on save()
+// -------------------------------------------------------
+let cachedAuthUsers = null;
+
 /**
- * findAll — อ่าน auth users ทั้งหมดจาก auth_user.json
+ * findAll — อ่าน auth users ทั้งหมดจาก auth_user.json (จาก cache)
  *
  * @returns {Array} Array ของ user objects
  */
 function findAll() {
-    const raw = fs.readFileSync(AUTH_USERS_PATH, 'utf-8');
-    const users = JSON.parse(raw);
-    return Array.isArray(users) ? users : [];
+    if (!cachedAuthUsers) {
+        const raw = fs.readFileSync(AUTH_USERS_PATH, 'utf-8');
+        const users = JSON.parse(raw);
+        cachedAuthUsers = Array.isArray(users) ? users : [];
+        console.log(`[AuthUserRepo] Loaded ${cachedAuthUsers.length} auth users into cache`);
+    }
+    return cachedAuthUsers;
 }
 
 /**
@@ -72,6 +81,9 @@ function save(newUser) {
 
     users.push(userToSave);
     fs.writeFileSync(AUTH_USERS_PATH, JSON.stringify(users, null, 2));
+
+    // Invalidate cache after write so next read picks up the new user
+    cachedAuthUsers = null;
 
     return userToSave;
 }

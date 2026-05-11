@@ -71,18 +71,46 @@ function renderCheckoutTable() {
         subtotal += itemTotal;
 
         const row = document.createElement('tr');
-        row.innerHTML = `
-            <th scope="row">
-                <div class="d-flex align-items-center mt-2">
-                    <img src="${item.image}" class="img-fluid rounded-circle"
-                         style="width: 90px; height: 90px;" alt="${item.name}">
-                </div>
-            </th>
-            <td class="py-5">${item.name}</td>
-            <td class="py-5">$${item.price.toFixed(2)}</td>
-            <td class="py-5">${item.quantity}</td>
-            <td class="py-5">$${itemTotal.toFixed(2)}</td>
-        `;
+
+        // Image cell — built with DOM APIs to prevent XSS
+        const imgCell = document.createElement('th');
+        imgCell.scope = 'row';
+        const imgDiv = document.createElement('div');
+        imgDiv.className = 'd-flex align-items-center mt-2';
+        const img = document.createElement('img');
+        img.src = item.image;
+        img.className = 'img-fluid rounded-circle';
+        img.style.width = '90px';
+        img.style.height = '90px';
+        img.alt = item.name;
+        imgDiv.appendChild(img);
+        imgCell.appendChild(imgDiv);
+        row.appendChild(imgCell);
+
+        // Name cell — textContent auto-escapes HTML
+        const nameCell = document.createElement('td');
+        nameCell.className = 'py-5';
+        nameCell.textContent = item.name;
+        row.appendChild(nameCell);
+
+        // Price cell
+        const priceCell = document.createElement('td');
+        priceCell.className = 'py-5';
+        priceCell.textContent = '$' + item.price.toFixed(2);
+        row.appendChild(priceCell);
+
+        // Quantity cell
+        const qtyCell = document.createElement('td');
+        qtyCell.className = 'py-5';
+        qtyCell.textContent = item.quantity;
+        row.appendChild(qtyCell);
+
+        // Total cell
+        const totalCell = document.createElement('td');
+        totalCell.className = 'py-5';
+        totalCell.textContent = '$' + itemTotal.toFixed(2);
+        row.appendChild(totalCell);
+
         tableBody.appendChild(row);
     });
 
@@ -193,11 +221,14 @@ async function handlePlaceOrder() {
  */
 function showResult(container, type, message) {
     if (!container) return;
-    container.innerHTML = `
-        <div class="alert alert-${type} mt-3" role="alert" style="white-space: pre-line;">
-            ${message}
-        </div>
-    `;
+    // Use DOM APIs instead of innerHTML to prevent XSS
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-' + type + ' mt-3';
+    alertDiv.setAttribute('role', 'alert');
+    alertDiv.style.whiteSpace = 'pre-line';
+    alertDiv.textContent = message;  // textContent auto-escapes HTML
+    container.innerHTML = '';
+    container.appendChild(alertDiv);
     container.scrollIntoView({ behavior: 'smooth' });
 }
 

@@ -52,7 +52,10 @@ function getAll(req, res) {
     } catch (error) {
         // If something goes wrong (e.g., file not found), return a 500 error
         console.error('Error in getAll:', error.message);
-        res.status(500).json({ error: 'Failed to retrieve products' });
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: 'Failed to retrieve products. Please try again later.',
+        });
     }
 }
 
@@ -75,14 +78,20 @@ function getById(req, res) {
 
         // If no product was found, return a 404 (Not Found) response
         if (!product) {
-            return res.status(404).json({ error: 'Product not found' });
+            return res.status(404).json({
+                error: 'Not Found',
+                message: 'Product not found.',
+            });
         }
 
         // Send the product object as a JSON response
         res.status(200).json(product);
     } catch (error) {
         console.error('Error in getById:', error.message);
-        res.status(500).json({ error: 'Failed to retrieve product' });
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: 'Failed to retrieve product. Please try again later.',
+        });
     }
 }
 

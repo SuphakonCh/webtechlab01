@@ -16,14 +16,23 @@ const path = require('path');
 // Absolute path to the users data file (สำหรับ Login)
 const USERS_PATH = path.join(__dirname, '..', 'users.json');
 
+// -------------------------------------------------------
+// IN-MEMORY CACHE — load once at startup
+// -------------------------------------------------------
+let cachedUsers = null;
+
 /**
- * findAll — อ่าน users ทั้งหมดจาก users.json
+ * findAll — อ่าน users ทั้งหมดจาก users.json (จาก cache)
  *
  * @returns {Array} Array ของ user objects
  */
 function findAll() {
-    const rawData = fs.readFileSync(USERS_PATH, 'utf-8');
-    return JSON.parse(rawData);
+    if (!cachedUsers) {
+        const rawData = fs.readFileSync(USERS_PATH, 'utf-8');
+        cachedUsers = JSON.parse(rawData);
+        console.log(`[UserRepo] Loaded ${cachedUsers.length} users into cache`);
+    }
+    return cachedUsers;
 }
 
 /**

@@ -31,6 +31,12 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** Matches exactly 16 consecutive digits (spaces/dashes stripped before test) */
 const CARD_REGEX = /^\d{16}$/;
 
+// -------------------------------------------------------
+// Business-rule limits (prevent parameter tampering)
+// -------------------------------------------------------
+const MAX_CART_ITEMS         = 50;  // max distinct products per order
+const MAX_QUANTITY_PER_ITEM  = 99;  // max units per product per order
+
 /**
  * checkout — Handler for POST /api/checkout
  *
@@ -60,19 +66,22 @@ async function checkout(req, res) {
     // name string, a non-negative finite price, and a positive integer quantity.
     if (!Array.isArray(cartItems) || cartItems.length === 0) {
         errors.cartItems = 'Cart must contain at least one item.';
+    } else if (cartItems.length > MAX_CART_ITEMS) {
+        errors.cartItems = `Cart cannot contain more than ${MAX_CART_ITEMS} items.`;
     } else {
         const hasInvalidItem = cartItems.some((item) => {
             if (!item || typeof item !== 'object')                                        return true;
             if (typeof item.name !== 'string' || item.name.trim() === '')                return true;
             if (typeof item.price !== 'number' || !Number.isFinite(item.price)
                 || item.price < 0)                                                        return true;
-            if (!Number.isInteger(item.quantity) || item.quantity <= 0)                  return true;
+            if (!Number.isInteger(item.quantity) || item.quantity <= 0
+                || item.quantity > MAX_QUANTITY_PER_ITEM)                                 return true;
             return false;
         });
 
         if (hasInvalidItem) {
             errors.cartItems =
-                'Each cart item must have a valid name (string), price (number ≥ 0), and quantity (integer > 0).';
+                `Each cart item must have a valid name, price (≥ 0), and quantity (1–${MAX_QUANTITY_PER_ITEM}).`;
         }
     }
 
@@ -163,16 +172,17 @@ async function checkout(req, res) {
         });
 
     } catch (err) {
-        // Log the internal error for server-side debugging
+        // Log the REAL error server-side for debugging
         console.error('[checkoutController] saveOrder failed:', err.message);
 
-        // Respond with a specific saveOrder field error.
-        // 400 tells the frontend the cart must NOT be cleared.
+        // SECURITY: Never send raw internal errors to the client.
+        // err.message may contain SQLite table names, column names, or file paths.
+        // Log it above, but return a generic message to the client.
         return res.status(400).json({
             error: 'Save Error',
             message: 'Your order could not be saved. Your cart has been kept intact.',
             errors: {
-                saveOrder: err.message || 'Failed to save order. Please try again.',
+                saveOrder: 'Failed to save order. Please try again.',
             },
         });
     }

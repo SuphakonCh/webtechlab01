@@ -387,3 +387,176 @@ Refactor จาก architecture **3 ชั้น** (Route → Controller → Ser
 | 4 | ไม่เช็ค stock | ✅ แก้แล้ว (เช็คก่อนสั่ง) |
 | 5 | Frontend ไม่ส่ง token | ✅ แก้แล้ว (`Authorization: Bearer`) |
 
+---
+
+## [2026-05-11] Environment Configuration & Project Documentation
+
+### 1. ติดตั้ง dotenv สำหรับจัดการ Environment Variables
+
+**Package ใหม่:** `dotenv`
+
+**ไฟล์ใหม่:**
+
+| ไฟล์ | หน้าที่ |
+|------|---------|
+| `backend/.env` | เก็บ secret จริง — **git-ignored** ห้าม commit |
+| `backend/.env.example` | Template สำหรับ dev คนอื่น — **committed** |
+
+**Environment Variables ที่กำหนด:**
+
+| Variable | ค่า Default | คำอธิบาย |
+|----------|------------|---------|
+| `PORT` | `3000` | พอร์ตที่ server ใช้ |
+| `NODE_ENV` | `development` | Environment mode |
+| `JWT_SECRET` | fallback string | Secret key สำหรับ sign/verify JWT |
+| `JWT_EXPIRES_IN` | `2h` | Token expiry |
+| `DB_PATH` | `./store.db` | Path ไปยัง SQLite database |
+| `CORS_ORIGIN` | `*` | CORS allowed origins |
+
+**ไฟล์ที่แก้ไข:**
+
+| ไฟล์ | การแก้ไข |
+|------|---------|
+| `backend/server.js` | เพิ่ม `require('dotenv').config()` บรรทัดแรก + `process.env.PORT` |
+| `backend/controllers/authController.js` | `JWT_EXPIRES` อ่านจาก `process.env.JWT_EXPIRES_IN` |
+| `backend/middleware/authMiddleware.js` | `JWT_SECRET` อ่านจาก `process.env.JWT_SECRET` (มีอยู่แล้ว) |
+| `backend/db.js` | `DB_PATH` อ่านจาก `process.env.DB_PATH` |
+
+**หลักการทำงาน:**
+1. `require('dotenv').config()` ต้องอยู่บรรทัดแรกสุดใน `server.js`
+2. `.env` เก็บ secret จริง → **อยู่ใน `.gitignore` แล้ว**
+3. `.env.example` เป็น template → **commit ได้**
+4. ทุกไฟล์ใช้ fallback: `process.env.X || 'default'`
+
+### 2. สร้าง README.md สำหรับ Employer
+
+**ไฟล์ใหม่:** `README.md` (root)
+
+เนื้อหาครอบคลุม:
+- Features table (Product Catalog, Auth, Cart, Checkout, Orders, JWT)
+- Architecture diagram (Controller-Route-Service-Repository)
+- Full project structure tree
+- Getting Started (clone, install, .env, run)
+- Environment Variables table
+- API Endpoints table (Products, Auth, Checkout)
+- Security Practices summary
+- Tech Stack table
+
+---
+
+## [2026-05-11] Pre-Deployment Security Hardening (10-Point Checklist)
+
+### Phase 1 — Security Middleware & Server Hardening
+
+**Packages ใหม่:** `helmet`, `cors`, `express-rate-limit`
+
+**ไฟล์ที่แก้ไข:** `backend/server.js`
+
+| # | สิ่งที่เพิ่ม | รายละเอียด |
+|---|------------|-----------|
+| 3 | **Rate Limiting** | Global: 100 req/15min, Auth: 10 req/15min (ป้องกัน brute-force) |
+| 4 | **Helmet** | Security headers (X-Frame-Options, CSP, etc.) — ปิด CSP สำหรับ static frontend |
+| 4 | **CORS** | จำกัด origin + methods + headers ที่อนุญาต |
+| 6 | **JSON Body Limit** | `express.json({ limit: '100kb' })` ป้องกัน payload attack |
+| 8 | **404 Handler** | Route ที่ไม่มีอยู่ → `{ error: "Not Found", message: "Route ... does not exist." }` |
+| 8 | **Global Error Handler** | 4-param middleware จับ uncaught errors — ไม่ leak stack trace ใน production |
+| 9 | **Graceful Shutdown** | `SIGTERM`/`SIGINT` → ปิด HTTP server → ปิด SQLite connection → `process.exit(0)` |
+
+### Phase 2 — Performance Optimization (In-Memory Cache)
+
+**ไฟล์ที่แก้ไข:**
+
+| ไฟล์ | สิ่งที่เปลี่ยน |
+|------|-------------|
+| `repositories/productRepository.js` | `readFileSync` ทุก request → **cache ใน memory** ครั้งเดียว |
+| `repositories/userRepository.js` | เช่นเดียวกัน — cache ตอน startup |
+| `repositories/authUserRepository.js` | cache + **invalidate on `save()`** (เพราะ register เขียนไฟล์) |
+
+### Phase 3 — Package Scripts & NODE_ENV
+
+**ไฟล์ที่แก้ไข:** `backend/package.json`
+
+```diff
+  "scripts": {
++   "start": "node server.js",
++   "dev": "node --watch server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+```
+
+### Phase 4 — Error Response Consistency
+
+**ไฟล์ที่แก้ไข:** `backend/controllers/productController.js`
+
+- `getAll()` error: `{ error: 'Failed to retrieve products' }` → `{ error: 'Internal Server Error', message: '...' }`
+- `getById()` 404: `{ error: 'Product not found' }` → `{ error: 'Not Found', message: '...' }`
+- ทุก controller ตอบ format เดียวกันหมด: `{ error, message, [errors] }`
+
+### Phase 5 — XSS Prevention (Frontend)
+
+**ไฟล์ที่แก้ไข:** `frontend/js/checkout.js`
+
+| ฟังก์ชัน | เดิม (เสี่ยง XSS) | ใหม่ (ปลอดภัย) |
+|---------|-----------------|---------------|
+| `showResult()` | `innerHTML = \`${message}\`` | `createElement('div')` + `textContent = message` |
+| `renderCheckoutTable()` | `row.innerHTML = \`${item.name}\`` | `createElement('td')` + `textContent = item.name` |
+
+---
+
+## [2026-05-11] Security Audit — แก้ไข 3 ช่องโหว่ใน Checkout Flow
+
+### 🔴 Vulnerability #1: Race-Condition Stock Depletion (TOCTOU) — Critical
+
+**ปัญหา:** Stock ถูก **เช็ค** ใน `checkoutService.js` แต่ไม่ถูก **หัก** ก่อน save — ถ้าส่ง 20 request พร้อมกัน ทุก request จะเห็น stock เท่าเดิม → ขายเกิน stock ได้
+
+**ไฟล์ใหม่/แก้ไข:**
+
+| ไฟล์ | การแก้ไข |
+|------|---------|
+| `backend/db.js` | เพิ่มตาราง `product_stock` + seed จาก `products.json` + เปิด WAL mode |
+| `backend/repositories/orderRepository.js` | เพิ่ม `saveToDbWithStockCheck()` — SQLite Transaction: `BEGIN` → `UPDATE stock WHERE stock >= qty` → `INSERT order` → `COMMIT` |
+| `backend/services/checkoutService.js` | เปลี่ยนจาก `saveToDb()` → `saveToDbWithStockCheck()` |
+
+**หลักการ:** `UPDATE product_stock SET stock = stock - ? WHERE product_id = ? AND stock >= ?` เป็น **atomic operation** ใน SQLite — ไม่มีทาง 2 requests จะ "ชนะ" stock ชุดเดียวกันได้
+
+### 🟡 Vulnerability #2: Quantity Parameter Tampering — High
+
+**ปัญหา:** Validate `quantity > 0` แต่ **ไม่มีขอบเขตบน** — attacker ส่ง `quantity: 9007199254740991` → ผ่าน validation → `totalPrice` overflow
+
+**ไฟล์ที่แก้ไข:** `backend/controllers/checkoutController.js`
+
+```javascript
+const MAX_CART_ITEMS         = 50;  // max distinct products per order
+const MAX_QUANTITY_PER_ITEM  = 99;  // max units per product per order
+```
+
+- เพิ่ม `cartItems.length > MAX_CART_ITEMS` → reject
+- เพิ่ม `item.quantity > MAX_QUANTITY_PER_ITEM` → reject
+
+### 🟡 Vulnerability #3: Internal Error Message Leakage — High
+
+**ปัญหา:** `err.message` ส่งกลับ client ตรงๆ → attacker เห็น `"SQLite insert failed: SQLITE_CONSTRAINT: NOT NULL constraint failed: orders.user_id"` → รู้ database engine, table name, column names
+
+**ไฟล์ที่แก้ไข:**
+
+| ไฟล์ | การแก้ไข |
+|------|---------|
+| `controllers/checkoutController.js` | `saveOrder: err.message` → `saveOrder: 'Failed to save order. Please try again.'` |
+| `services/checkoutService.js` | ลบ `item.name` (client-controlled) ออกจาก error message → ใช้แค่ `item.id` (server-controlled) |
+
+### ผลทดสอบ (test_security_fixes.js)
+
+```
+✅ Fix #2: Quantity Overflow     → 400 "quantity (1–99)" — Blocked!
+✅ Fix #2: Cart Size Limit       → 400 "more than 50 items" — Blocked!
+✅ Fix #3: Error Sanitization    → No XSS, No SQLite leak
+✅ Fix #1: Atomic Stock Checkout → 201 Order saved with stock decrement!
+```
+
+### สรุป Security Checklist
+
+| # | ช่องโหว่ | สถานะ |
+|---|---------|-------|
+| 1 | Race-Condition Stock (TOCTOU) | ✅ แก้แล้ว (SQLite Transaction + atomic UPDATE) |
+| 2 | Quantity Overflow (no upper bound) | ✅ แก้แล้ว (MAX_QUANTITY = 99, MAX_CART = 50) |
+| 3 | Internal Error Leakage | ✅ แก้แล้ว (generic message to client) |
